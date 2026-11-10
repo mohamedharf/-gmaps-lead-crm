@@ -1,0 +1,248 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">System Settings</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-primary text-white p-3">
+                    <h5 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Global System Settings</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Site Name</label>
+                            {{ form.site_name }}
+                            <div class="form-text">The name of the website displayed in the navigation bar.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Site Logo</label>
+                            {{ form.logo }}
+                            <div class="form-text">Upload a logo to display in the top navigation.</div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-primary">Primary Color (Light)</label>
+                                {{ form.primary_color }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-secondary">Secondary Color (Light)</label>
+                                {{ form.secondary_color }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Text Color (Light)</label>
+                                {{ form.text_color }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 p-3 bg-light rounded-3 border border-dashed border-primary">
+                            <div class="col-12 mb-2">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-moon-stars-fill me-2"></i>Dark Mode
+                                    Branding</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Primary Color (Dark)</label>
+                                {{ form.dark_primary_color }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Secondary Color (Dark)</label>
+                                {{ form.dark_secondary_color }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Text Color (Dark)</label>
+                                {{ form.dark_text_color }}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Default Commission Rate (%)</label>
+                            <div class="input-group">
+                                {{ form.default_commission_rate }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">
+                                Global default commission rate.
+                                Can be overridden for specific agents in their profiles.
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-dots me-2"></i>Outreach Message Templates</h6>
+
+                        <div class="alert alert-secondary small mb-4">
+                            <h6 class="alert-heading fw-bold small"><i class="bi bi-info-circle me-1"></i>Available
+                                Placeholders:</h6>
+                            <ul class="mb-0 ps-3">
+                                <li><code>{name}</code> - Lead Name</li>
+                                <li><code>{city}</code> - Lead City</li>
+                                <li><code>{rating}</code> - Google Maps Rating</li>
+                                <li><code>{reviews_count}</code> - Number of Reviews</li>
+                                <li><code>{product_price}</code> - Current Product Price</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">First Message Template (Intro)</label>
+                            {{ form.first_message_template }}
+                            <div class="form-text">Sent as the initial outreach to the lead.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Second Message Template (Follow-up)</label>
+                            {{ form.second_message_template }}
+                            <div class="form-text">Sent as a follow-up or reply with more details.</div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-grid shadow-sm">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save me-2"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-muted small p-3">
+                    <i class="bi bi-clock-history me-1"></i>
+                    Last updated: {{ settings.updated_at|date:"Y-m-d H:i" }}
+                </div>
+            </div>
+
+            <div class="mt-4 alert alert-info shadow-sm border-0">
+                <h6 class="alert-heading fw-bold"><i class="bi bi-lightbulb me-2"></i>Tip</h6>
+                <p class="mb-0 small">
+                    Pricing and product details are now managed per-dataset. Click the edit button for a dataset below
+                    to set custom pricing.
+                </p>
+            </div>
+
+            <!-- Dataset Management Section -->
+            <div
+                class="card border-0 rounded-3 shadow-sm mt-4 mb-5 dark:bg-slate-800 dark:border dark:border-slate-700">
+                <form action="{% url 'bulk_delete_datasets' %}" method="post" id="bulkDatasetForm">
+                    {% csrf_token %}
+                    <div class="card-header p-3 d-flex justify-content-between align-items-center rounded-top-3"
+                        style="background-color: var(--brand-primary);">
+                        <div class="d-flex align-items-center">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="selectAllDatasets"
+                                    style="cursor: pointer; width: 1.2rem; height: 1.2rem; border-color: rgba(255,255,255,0.5); background-color: transparent;">
+                            </div>
+                            <h5 class="mb-0 ms-2 text-white fw-bold">
+                                <i class="bi bi-database me-2"></i>Dataset Management
+                            </h5>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" id="bulkDeleteBtn"
+                                class="btn btn-sm btn-danger shadow-sm d-none fw-bold"
+                                onclick="return confirm('Are you sure you want to delete the selected datasets? This will permanently remove all related leads.');">
+                                <i class="bi bi-trash me-1"></i> Delete Selected
+                            </button>
+                            <a href="{% url 'import_data' %}" class="btn btn-sm fw-bold shadow-sm text-white"
+                                style="background-color: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);">
+                                <i class="bi bi-plus-circle me-1"></i> New Dataset
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        {% for dataset in datasets %}
+                        <div class="d-flex justify-content-between align-items-center p-3
+                            border-bottom border-slate-100 dark:border-slate-700
+                            hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <div class="form-check mb-0 me-3">
+                                    <input class="form-check-input dataset-checkbox" type="checkbox" name="dataset_ids"
+                                        value="{{ dataset.id }}"
+                                        style="cursor: pointer; width: 1.1rem; height: 1.1rem; accent-color: var(--brand-primary);">
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold dark:text-slate-100">{{ dataset.name }}</h6>
+                                    <small class="text-muted dark:text-slate-400">
+                                        <i class="bi bi-clock me-1"></i>{{ dataset.created_at|date:"M d, Y" }}
+                                        &bull;
+                                        <span class="badge rounded-pill fw-normal"
+                                            style="background-color: rgba(var(--brand-primary-rgb, 13,110,253), 0.12); color: var(--brand-primary);">
+                                            {{ dataset.leads.count }} records
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'edit_dataset' dataset.id %}"
+                                    class="btn btn-sm btn-outline-primary shadow-sm" title="Edit Settings">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-5 text-center text-muted dark:text-slate-500">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                            <p class="mb-0">No datasets found. Import data to get started.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('selectAllDatasets');
+        const checkboxes = document.querySelectorAll('.dataset-checkbox');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+
+        function updateBulkDeleteBtn() {
+            const checkedCount = document.querySelectorAll('.dataset-checkbox:checked').length;
+            if (checkedCount > 0) {
+                bulkDeleteBtn.classList.remove('d-none');
+            } else {
+                bulkDeleteBtn.classList.add('d-none');
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(cb => {
+                    cb.checked = selectAll.checked;
+                });
+                updateBulkDeleteBtn();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function () {
+                updateBulkDeleteBtn();
+
+                // Update selectAll state
+                if (!this.checked) {
+                    selectAll.checked = false;
+                } else if (document.querySelectorAll('.dataset-checkbox:checked').length === checkboxes.length) {
+                    selectAll.checked = true;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

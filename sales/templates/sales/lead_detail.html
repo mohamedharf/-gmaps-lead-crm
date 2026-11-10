@@ -1,0 +1,634 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block title %}{{ lead.name }} - Overview{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-card {
+        @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+    }
+
+    .status-dot {
+        @apply w-2.5 h-2.5 rounded-full ring-2 ring-white shadow-sm;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 pb-20">
+    <!-- Premium Breadcrumb & Title Section -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div class="space-y-2">
+            <nav class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <a href="{% url 'dashboard' %}" class="hover:text-brand-primary transition-colors">Hub</a>
+                <i class="bi bi-chevron-right text-[8px]"></i>
+                <a href="{% url 'data_explorer' %}" class="hover:text-brand-primary transition-colors">Leads</a>
+                <i class="bi bi-chevron-right text-[8px]"></i>
+                <span class="text-slate-600">Profile</span>
+            </nav>
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-16 h-16 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center text-3xl font-bold shadow-inner">
+                    {{ lead.name|first|upper }}
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">{{ lead.name }}</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        {% if lead.dataset.product_price %}
+                        <span
+                            class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-tighter">
+                            <i class="bi bi-tag-fill me-1"></i>{{ lead.dataset.product_price }} EGP
+                        </span>
+                        {% endif %}
+                        <span
+                            class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">{{ lead.get_business_size_display }}</span>
+                        <span class="text-slate-400 text-xs flex items-center gap-1">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            {{ lead.city }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'data_explorer' %}"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">
+                <i class="bi bi-arrow-left"></i>
+                List View
+            </a>
+            {% if lead.website_url %}
+            <a href="{{ lead.website_url }}" target="_blank"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 active:scale-95">
+                <i class="bi bi-globe"></i>
+                Visit Web
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Stats Hub -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Rating -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-amber-50 text-amber-500 rounded-xl text-lg"><i class="bi bi-star-fill"></i></div>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Trust Score</span>
+            </div>
+            <p class="text-2xl font-black text-slate-900">{{ lead.rating|default:"0.0" }} <span
+                    class="text-xs font-bold text-slate-400">/ 5</span></p>
+        </div>
+        <!-- Reviews -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-blue-50 text-blue-500 rounded-xl text-lg"><i class="bi bi-chat-heart"></i></div>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Feedback</span>
+            </div>
+            <p class="text-2xl font-black text-slate-900">{{ lead.reviews_count|default:"0" }} <span
+                    class="text-xs font-bold text-slate-400">Reviews</span></p>
+        </div>
+        <!-- Photos -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-emerald-50 text-emerald-500 rounded-xl text-lg"><i class="bi bi-images"></i></div>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Visuals</span>
+            </div>
+            <p class="text-2xl font-black text-slate-900">{{ lead.photos_count|default:"0" }} <span
+                    class="text-xs font-bold text-slate-400">Photos</span></p>
+        </div>
+        <!-- Status -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm overflow-hidden relative group">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-brand-primary/10 text-brand-primary rounded-xl text-lg"><i
+                        class="bi bi-funnel-fill"></i></div>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Pipeline</span>
+            </div>
+            <select name="status" id="statusSelect" class="w-full bg-transparent border-none p-0 text-xl font-black focus:ring-0 cursor-pointer appearance-none transition-all
+                {% if lead.outreach_status.status == 'DEAL' %}text-emerald-600
+                {% elif lead.outreach_status.status == 'FOLLOW_UP' %}text-amber-600
+                {% elif lead.outreach_status.status == 'SENT' %}text-brand-primary
+                {% else %}text-slate-500{% endif %}" onchange="handleStatusChange(this, '{{ lead.pk }}')"
+                {% if lead.outreach_status.status == 'DEAL' and not request.user.is_staff %}disabled{% endif %}>
+                {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if lead.outreach_status.status == code %}selected{% endif %}>
+                    {{ label }}</option>
+                {% endfor %}
+            </select>
+            {% if lead.outreach_status.status == 'DEAL' %}
+            {% if lead.deal_request.status == 'PENDING' %}
+            <div class="text-[9px] font-bold text-amber-500 uppercase mt-1">Awaiting Approval</div>
+            {% elif lead.deal_request.status == 'APPROVED' %}
+            <div class="text-[9px] font-bold text-emerald-500 uppercase mt-1">Deal Confirmed</div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Left: Core Dossier -->
+        <div class="lg:col-span-8 space-y-8">
+            <!-- Information Grid -->
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/30">
+                    <h2 class="font-black text-slate-800 flex items-center gap-2">
+                        <i class="bi bi-journal-text text-brand-primary"></i>
+                        Core Lead Dossier
+                    </h2>
+                </div>
+                <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location Architecture
+                        </p>
+                        <p class="text-sm text-slate-800 font-semibold">
+                            {{ cleaned_address|default:"Unknown Sector" }}</p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Digital Footprint</p>
+                        {% if lead.website_url %}
+                        <a href="{{ lead.website_url }}" target="_blank" class="text-sm font-bold text-brand-primary hover:underline flex items-center gap-1 w-max">
+                            <i class="bi bi-box-arrow-up-right"></i> Visit Website
+                        </a>
+                        {% else %}
+                        <p class="text-sm font-semibold truncate text-slate-500">Ghost Lead (No Site)</p>
+                        {% endif %}
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identification (GMID)
+                        </p>
+                        {% if lead.gmaps_id %}
+                        <a href="https://www.google.com/maps/search/?api=1&query={{ lead.name|urlencode }}+{{ lead.city|urlencode }}" target="_blank" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg inline-flex items-center gap-2 hover:bg-emerald-100 transition-colors">
+                            <i class="bi bi-geo-alt-fill"></i> View on Google Maps
+                        </a>
+                        {% else %}
+                        <p class="text-xs font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded inline-block">Unknown</p>
+                        {% endif %}
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last Intelligence
+                            Sync</p>
+                        <p class="text-sm text-slate-600 font-medium">
+                            {{ lead.last_scraped_at|date:"D, j M Y — H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Immutable Comments Section (New) -->
+            <div
+                class="bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-2xl shadow-brand-primary/10 border border-slate-100 dark:border-slate-700 mt-8">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i class="bi bi-chat-left-text-fill text-brand-primary"></i>
+                    Intelligence & Team Feedback
+                </h3>
+
+                <!-- Comment Feed -->
+                <div class="space-y-4 mb-6 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    {% for comment in lead.comments.all %}
+                    <div
+                        class="p-4 rounded-[1.5rem] {% if comment.user.is_staff %}bg-brand-primary/5 border border-brand-primary/10 text-brand-primary{% else %}bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-300{% endif %}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                <i class="bi bi-person-circle"></i>
+                                {{ comment.user.get_full_name|default:comment.user.username }}
+                                {% if comment.user.is_staff %}(Admin){% endif %}
+                            </span>
+                            <span class="text-[10px] opacity-60 font-mono">
+                                {{ comment.created_at|date:"d/m/Y - H:i" }}
+                            </span>
+                        </div>
+                        <p class="text-sm font-medium leading-relaxed">
+                            {{ comment.text }}
+                        </p>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-6 opacity-40">
+                        <i class="bi bi-chat-quote display-6 d-block mb-2"></i>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">No intelligence recorded yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Comment Form -->
+                <form action="{% url 'add_lead_comment' lead.id %}" method="POST" class="relative">
+                    {% csrf_token %}
+                    <textarea name="comment_text" required
+                        class="w-full rounded-3xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm p-4 pr-14 focus:ring-brand-primary focus:border-brand-primary transition-all dark:text-white"
+                        placeholder="Add intelligence or feedback..." rows="3"></textarea>
+                    <button type="submit"
+                        class="absolute bottom-3 right-3 bg-brand-primary text-white p-2 rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-brand-primary/20">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Automation & Workspace -->
+            <div
+                class="bg-white dark:bg-slate-800 rounded-[2rem] p-8 {% if dark_mode %}text-white{% else %}text-slate-900{% endif %} shadow-2xl shadow-brand-primary/10 relative overflow-hidden border border-slate-100 dark:border-slate-700">
+                <div class="relative z-10 space-y-8">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-black flex items-center gap-3">
+                            <i class="bi bi-whatsapp text-emerald-500 text-2xl"></i>
+                            Communication Engine
+                        </h2>
+                        <div class="flex gap-2">
+                            <div
+                                class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span
+                                    class="status-dot {% if lead.assigned_sender %}bg-emerald-500{% else %}bg-slate-400{% endif %}"></span>
+                                <span class="{% if dark_mode %}text-slate-300{% else %}text-slate-600{% endif %}">
+                                    {% if lead.assigned_sender %}Channel Ready{% else %}Offline{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Strategy (Commented Out by User Request) -->
+                    <!--
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Dynamic Conv. Link</p>
+                        ...
+                    </div>
+                    -->
+
+                    <!-- Message Terminals -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Phase 1 Script
+                                </p>
+                                <button
+                                    onclick="copyToClipboard('{{ lead.contact_details.message_body|escapejs }}', 'Phase 1 Copied')"
+                                    class="text-[10px] font-bold text-brand-primary hover:underline">Copy</button>
+                            </div>
+                            <div
+                                class="bg-white/5 rounded-2xl p-4 border border-white/5 text-[11px] text-slate-300 leading-relaxed max-h-[150px] overflow-y-auto custom-scrollbar italic font-serif">
+                                {{ lead.contact_details.message_body|default:"Script generated on first sync..." }}
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Follow-up
+                                    Logic</p>
+                                <button
+                                    onclick="copyToClipboard('{{ lead.contact_details.second_message|escapejs }}', 'Follow-up Copied')"
+                                    class="text-[10px] font-bold text-brand-primary hover:underline">Copy</button>
+                            </div>
+                            <div
+                                class="bg-white/5 rounded-2xl p-4 border border-white/5 text-[11px] text-slate-400 leading-relaxed max-h-[150px] overflow-y-auto custom-scrollbar">
+                                {{ lead.contact_details.second_message|default:"Awaiting engagement trigger..." }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background decoration -->
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand-primary/5 rounded-full blur-3xl"></div>
+            </div>
+        </div>
+
+        <!-- Right: Intelligence & Actions -->
+        <div class="lg:col-span-4 space-y-8">
+            <!-- Contact Stack -->
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex items-center justify-between">
+                    <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Connections</h3>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg text-xs"><i
+                            class="bi bi-shield-check"></i></div>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Phone -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Primary Line</span>
+                            {% if phone_type == 'MOBILE' %}
+                            <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="bi bi-phone"></i> Mobile</span>
+                            {% elif phone_type == 'FIXED' %}
+                            <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="bi bi-telephone-fill"></i> Landline</span>
+                            {% else %}
+                            <span class="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="bi bi-hash"></i> Unknown Type</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <p class="text-lg font-black text-slate-900">
+                                {{ cleaned_primary|default:lead.contact_details.phone_primary|default:"NONE" }}</p>
+                            <a href="tel:{{ cleaned_primary|default:lead.contact_details.phone_primary }}"
+                                class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:text-brand-primary transition-all">
+                                <i class="bi bi-telephone-outbound"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Corporate Mail</p>
+                        {% if lead.contact_details.email_list %}
+                        <div class="space-y-2">
+                            {% for email in lead.contact_details.email_list|slice:":2" %}
+                            <div
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl group hover:bg-white hover:ring-1 hover:ring-brand-primary transition-all">
+                                <span
+                                    class="text-xs font-semibold text-slate-600 truncate max-w-[150px]">{{ email }}</span>
+                                <a href="mailto:{{ email }}" class="text-slate-300 group-hover:text-brand-primary"><i
+                                        class="bi bi-send-fill text-xs"></i></a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="py-4 text-center border-2 border-dashed border-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-300 font-bold italic">No Email Discovered</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Social Media</p>
+                        {% if lead.contact_details.social_links %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for platform, link in lead.contact_details.social_links.items %}
+                            <a href="{{ link }}" target="_blank" class="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white transition-colors capitalize flex items-center gap-1">
+                                <i class="bi bi-link-45deg"></i> {{ platform }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="py-4 text-center border-2 border-dashed border-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-300 font-bold italic">No Social Links Found</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assigned Team & Intelligence -->
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest flex items-center gap-2">
+                        <i class="bi bi-people-fill text-brand-primary text-[10px]"></i>
+                        Assigned Personnel
+                    </h3>
+                    {% if request.user.is_staff %}
+                    <span class="text-[9px] font-bold text-slate-400 uppercase">Admin Controlled</span>
+                    {% endif %}
+                </div>
+
+                <!-- Team List -->
+                <div class="flex flex-wrap gap-2">
+                    {% for agent in lead.assigned_agents.all %}
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                        <div
+                            class="w-6 h-6 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary text-[10px] font-black">
+                            {{ agent.username|slice:":1"|upper }}
+                        </div>
+                        <span
+                            class="text-[11px] font-bold text-slate-600">{{ agent.get_full_name|default:agent.username }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="w-full py-4 text-center border-2 border-dashed border-slate-50 rounded-2xl">
+                        <p class="text-[10px] text-slate-300 font-bold italic">No agents assigned yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <hr class="border-slate-50">
+
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tactical Protocol
+                            (Hidden Notes)</label>
+                        <textarea
+                            class="w-full bg-slate-50 border-transparent rounded-2xl text-sm p-4 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all font-medium text-slate-700 outline-none"
+                            rows="4" placeholder="Document specific lead behavior or objections..."
+                            id="leadNotes">{{ lead.outreach_status.notes|default:"" }}</textarea>
+                    </div>
+
+                    {% if lead.outreach_status.status == 'FOLLOW_UP' %}
+                    <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest">Active Follow-Up
+                            </p>
+                            <span
+                                class="text-[10px] font-bold text-amber-500">{{ lead.outreach_status.follow_up_date|date:"d M, H:i" }}</span>
+                        </div>
+                        <p class="text-[11px] font-medium text-amber-700">
+                            {{ lead.outreach_status.follow_up_notes|default:"No task details provided." }}</p>
+                    </div>
+                    {% endif %}
+
+                    <button
+                        class="w-full bg-brand-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        onclick="saveIntelligence()">
+                        Save Notes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Follow-Up Schedule Modal (New) -->
+<div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg dark:bg-slate-900" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-brand-primary text-white p-4">
+                <h5 class="modal-title font-black flex items-center gap-2">
+                    <i class="bi bi-calendar-event-fill"></i> Schedue Follow-Up
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    id="followUpCloseBtn"></button>
+            </div>
+            <div class="modal-body p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Sync
+                            Date & Time</label>
+                        <input type="datetime-local" id="followUpDateInput"
+                            class="w-full bg-slate-100 border-none rounded-2xl p-4 text-sm font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-primary transition-all">
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tactical
+                            Goal / Note</label>
+                        <textarea id="followUpNotesInput"
+                            class="w-full bg-slate-100 border-none rounded-2xl p-4 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-brand-primary transition-all"
+                            rows="3" placeholder="e.g., Call back to discuss pricing..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 gap-2">
+                <button type="button"
+                    class="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl active:scale-95 transition-all"
+                    data-bs-dismiss="modal" id="followUpCancelBtn">Cancel</button>
+                <button type="button"
+                    class="flex-1 py-3 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
+                    onclick="confirmFollowUpSubmission()">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deal Price Modal (Simplified for Detail Page) -->
+<div class="modal fade" id="dealPriceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg dark:bg-slate-900" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-emerald-600 text-white p-4">
+                <h5 class="modal-title font-black flex items-center gap-2">
+                    <i class="bi bi-trophy-fill"></i> Closing the Deal
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    id="dealModalCloseBtn"></button>
+            </div>
+            <div class="modal-body p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Final
+                            Agreed Price (EGP)</label>
+                        <input type="number" id="dealPriceInput"
+                            class="w-full bg-slate-100 border-none rounded-2xl p-4 text-xl font-black text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all"
+                            placeholder="0.00">
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Internal
+                            Notes</label>
+                        <textarea id="dealNotesInput"
+                            class="w-full bg-slate-100 border-none rounded-2xl p-4 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all"
+                            rows="3" placeholder="Any details for the admin..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 gap-2">
+                <button type="button"
+                    class="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl active:scale-95 transition-all"
+                    data-bs-dismiss="modal" id="dealModalCancelBtn">Cancel</button>
+                <button type="button"
+                    class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+                    onclick="confirmDealSubmission()">Submit Deal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let _previousStatus = '{{ lead.outreach_status.status }}';
+    const _isAdmin = {% if request.user.is_staff %}true{% else %} false{% endif %};
+
+    function handleStatusChange(selectEl, pk) {
+        const newStatus = selectEl.value;
+
+        if (newStatus === 'DEAL' && !_isAdmin) {
+            const modal = new bootstrap.Modal(document.getElementById('dealPriceModal'));
+            modal.show();
+
+            document.getElementById('dealModalCancelBtn').onclick = () => { selectEl.value = _previousStatus; modal.hide(); };
+            document.getElementById('dealModalCloseBtn').onclick = () => { selectEl.value = _previousStatus; modal.hide(); };
+            return;
+        }
+
+        if (newStatus === 'FOLLOW_UP') {
+            const modal = new bootstrap.Modal(document.getElementById('followUpModal'));
+            modal.show();
+
+            document.getElementById('followUpCancelBtn').onclick = () => { selectEl.value = _previousStatus; modal.hide(); };
+            document.getElementById('followUpCloseBtn').onclick = () => { selectEl.value = _previousStatus; modal.hide(); };
+            return;
+        }
+
+        // Normal save
+        saveStatus(newStatus);
+    }
+
+    function confirmFollowUpSubmission() {
+        const date = document.getElementById('followUpDateInput').value;
+        const notes = document.getElementById('followUpNotesInput').value;
+
+        if (!date) {
+            alert("Please select a date and time");
+            return;
+        }
+
+        const modalEl = document.getElementById('followUpModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+
+        saveStatus('FOLLOW_UP', 0, '', date, notes);
+        modal.hide();
+    }
+
+    async function saveStatus(status, price = 0, notes = '', follow_up_date = '', follow_up_notes = '') {
+        const formData = new FormData();
+        formData.append('status', status);
+        formData.append('deal_price', price);
+        formData.append('deal_notes', notes);
+        formData.append('follow_up_date', follow_up_date);
+        formData.append('follow_up_notes', follow_up_notes);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        try {
+            const response = await fetch('{% url "update_status" lead.pk %}', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                _previousStatus = status;
+                location.reload(); // Reload to update UI and lock if needed
+            } else {
+                alert(data.message || 'Error updating status');
+                document.getElementById('statusSelect').value = _previousStatus;
+            }
+        } catch (err) {
+            console.error('Save failed:', err);
+            document.getElementById('statusSelect').value = _previousStatus;
+        }
+    }
+
+    function confirmDealSubmission() {
+        const price = document.getElementById('dealPriceInput').value;
+        const notes = document.getElementById('dealNotesInput').value;
+
+        if (!price || parseFloat(price) <= 0) {
+            alert('Please enter a valid price');
+            return;
+        }
+
+        saveStatus('DEAL', price, notes);
+    }
+
+    function copyToClipboard(text, msg) {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            alert(msg);
+        });
+    }
+
+    async function saveIntelligence() {
+        const notes = document.getElementById('leadNotes').value;
+        const followUpDate = document.getElementById('followUpTrigger')?.value;
+        const followUpNotes = document.getElementById('followUpGoal')?.value;
+
+        const formData = new FormData();
+        formData.append('notes', notes);
+        if (followUpDate) formData.append('follow_up_date', followUpDate);
+        if (followUpNotes) formData.append('follow_up_notes', followUpNotes);
+        formData.append('status', _previousStatus); // Keep current status
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        try {
+            const response = await fetch('{% url "update_status" lead.pk %}', {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+                alert('Intelligence Updated Successfully');
+            }
+        } catch (err) {
+            console.error('Save failed:', err);
+        }
+    }
+</script>
+{% endblock %}

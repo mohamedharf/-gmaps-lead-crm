@@ -1,0 +1,107 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block title %}My Notifications{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <i class="bi bi-bell-fill text-brand-primary"></i> Notifications
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Review your recent alerts and activity.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            {% if notifications %}
+            <form action="{% url 'notifications:mark_all_read' %}" method="post">
+                {% csrf_token %}
+                <button type="submit"
+                    class="btn btn-outline-secondary w-full md:w-auto shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="bi bi-check2-all text-lg"></i> Mark All as Read
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div
+        class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {% if notifications %}
+        <ul class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for notif in notifications %}
+            <li
+                class="relative hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors {% if not notif.is_read %}bg-blue-50/30 dark:bg-slate-800{% endif %}">
+                <a href="{{ notif.target_url|default:'#' }}" class="block p-4 sm:p-5"
+                    onclick="markRead('{{ notif.id }}', event)">
+                    <div class="flex items-start gap-3 sm:gap-4">
+                        <!-- Icon / Status Dot -->
+                        <div class="flex-shrink-0 mt-1">
+                            {% if not notif.is_read %}
+                            <span
+                                class="w-3 h-3 bg-brand-primary rounded-full inline-block shadow-sm ring-2 ring-white dark:ring-slate-800"
+                                title="Unread"></span>
+                            {% else %}
+                            <i class="bi bi-check2 text-slate-300 dark:text-slate-600 text-lg"></i>
+                            {% endif %}
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                <h5 class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate pr-4">
+                                    {{ notif.title }}
+                                </h5>
+                                <span class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                    {{ notif.created_at|timesince }} ago
+                                </span>
+                            </div>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 break-words mb-0">
+                                {{ notif.message }}
+                            </p>
+                        </div>
+
+                        <!-- Action arrow -->
+                        <div class="flex-shrink-0 text-slate-300 dark:text-slate-600 mt-2">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <!-- Empty State -->
+        <div class="px-6 py-12 text-center">
+            <div
+                class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4 shadow-inner">
+                <i class="bi bi-bell-slash text-2xl text-slate-400 dark:text-slate-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-1">No notifications yet</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+                When you get notifications about leads, deals, or team updates, they'll show up here.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function markRead(notifId, event) {
+        // We let the link navigate normally, but trigger a fetch in the background
+        fetch(`/notifications/api/mark-read/${notifId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        }).catch(err => console.error(err));
+    }
+</script>
+{% endblock %}

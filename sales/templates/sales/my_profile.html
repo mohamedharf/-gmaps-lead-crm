@@ -1,0 +1,599 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}My Profile - {{ agent.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .agent-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .status-badge-lg {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">My Profile</li>
+        </ol>
+    </nav>
+
+    <!-- Agent Header Card -->
+    <div class="agent-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    {% if agent.sales_profile.profile_picture %}
+                    <img class="avatar-circle bg-white text-primary me-4 shadow-sm"
+                        src="{{ agent.sales_profile.profile_picture.url }}" alt="Profile"
+                        style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">
+                    {% else %}
+                    <div class="avatar-circle bg-white text-primary me-4 shadow-sm"
+                        style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold;">
+                        {% if agent.first_name %}{{ agent.first_name|first|upper }}{% else %}{{ agent.username|first|upper }}{% endif %}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="mb-1">
+                            {% if agent.get_full_name %}{{ agent.get_full_name }}{% else %}{{ agent.username }}{% endif %}
+                        </h2>
+                        <p class="mb-1"><strong><i class="bi bi-envelope me-1"></i> Email:</strong>
+                            {{ agent.email|default:"No email" }}</p>
+                        <p class="mb-2"><strong><i class="bi bi-telephone me-1"></i> Phone:</strong>
+                            {{ sales_profile.phone_number|default:"No phone" }}</p>
+                        <span class="status-badge-lg
+                            {% if sales_profile.status == 'online' %}bg-success
+                            {% elif sales_profile.status == 'away' %}bg-warning text-dark
+                            {% else %}bg-secondary{% endif %}">
+                            {{ sales_profile.status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <div class="mb-2">
+                    <i class="bi bi-calendar-check me-2"></i>
+                    <small>Joined: {{ sales_profile.joined_date|date:"M d, Y" }}</small>
+                </div>
+                <div>
+                    <i class="bi bi-clock me-2"></i>
+                    <small>
+                        {% if sales_profile.last_active_at %}
+                        <strong>Last active:</strong> {{ sales_profile.last_active_at|date:"Y-m-d H:i" }}
+                        <br>
+                        <span class="text-white-50">({{ sales_profile.last_active_at|timesince }} ago)</span>
+                        {% else %}
+                        Never logged in
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="mt-3">
+                    <input type="hidden" id="paymentLink"
+                        value="{{ request.scheme }}://{{ request.get_host }}{% url 'public_checkout' sales_profile.agent_uuid %}">
+                    <button class="btn btn-light btn-sm shadow-sm text-primary fw-bold hover-elevate"
+                        onclick="copyPaymentLink()" id="copyLinkBtn">
+                        <i class="bi bi-link-45deg me-1"></i> Copy My Payment Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4 border-0" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold fs-5 shadow-sm rounded-top" id="overview-tab" data-bs-toggle="tab"
+                data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
+                <i class="bi bi-speedometer2 me-1"></i> Overview
+            </button>
+        </li>
+        {% if subordinates %}
+        <li class="nav-item ms-2" role="presentation">
+            <button class="nav-link fw-bold fs-5 shadow-sm rounded-top text-primary" id="team-tab" data-bs-toggle="tab"
+                data-bs-target="#team" type="button" role="tab" aria-controls="team" aria-selected="false">
+                <i class="bi bi-people-fill me-1"></i> My Team ({{ subordinates|length }})
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item ms-2" role="presentation">
+            <button class="nav-link fw-bold fs-5 shadow-sm rounded-top text-secondary" id="history-tab"
+                data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history"
+                aria-selected="false">
+                <i class="bi bi-clock-history me-1"></i> My History
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="profileTabsContent">
+        <!-- Dashboard Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+            <!-- Stats Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card card p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-primary text-white p-3 rounded me-3">
+                                <i class="bi bi-briefcase fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-0">Total Leads</h6>
+                                <h3 class="mb-0 text-brand-text fw-black">{{ total_leads }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card card p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-success text-white p-3 rounded me-3">
+                                <i class="bi bi-trophy fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-0">Deals Closed</h6>
+                                <h3 class="mb-0 text-brand-text fw-black">{{ deals_count }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card card p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-warning text-white p-3 rounded me-3">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-0">Pending</h6>
+                                <h3 class="mb-0 text-brand-text fw-black">{{ status_dict.NOT_CONTACTED }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card card p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-info text-white p-3 rounded me-3">
+                                <i class="bi bi-percent fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-0">Conversion Rate</h6>
+                                <h3 class="mb-0 text-brand-text fw-black">{{ conversion_rate }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Chart & Status Breakdown -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card stat-card">
+                        <div class="card-header bg-slate-50 dark:bg-slate-900/50 border-0">
+                            <h5 class="mb-0 text-brand-text fw-bold"><i
+                                    class="bi bi-graph-up me-2 text-primary"></i>Performance (Last 30 Days)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card">
+                        <div class="card-header bg-slate-50 dark:bg-slate-900/50 border-0">
+                            <h5 class="mb-0 text-brand-text fw-bold"><i
+                                    class="bi bi-pie-chart me-2 text-primary"></i>Status Breakdown</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-brand-text opacity-75 small fw-bold">Not Contacted</span>
+                                    <strong class="text-brand-text">{{ status_dict.NOT_CONTACTED }}</strong>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-secondary"
+                                        style="width: {% widthratio status_dict.NOT_CONTACTED total_leads 100 %}%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-brand-text opacity-75 small fw-bold">Sent/In Progress</span>
+                                    <strong
+                                        class="text-brand-text">{{ status_dict.SENT|add:status_dict.DELIVERED|add:status_dict.READ }}</strong>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary"
+                                        style="width: {% widthratio status_dict.SENT|add:status_dict.DELIVERED|add:status_dict.READ total_leads 100 %}%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-brand-text opacity-75 small fw-bold">Replied</span>
+                                    <strong class="text-brand-text">{{ status_dict.REPLIED }}</strong>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-info"
+                                        style="width: {% widthratio status_dict.REPLIED total_leads 100 %}%;"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-brand-text opacity-75 small fw-bold">Deals</span>
+                                    <strong class="text-brand-text">{{ status_dict.DEAL }}</strong>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success"
+                                        style="width: {% widthratio status_dict.DEAL total_leads 100 %}%;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-brand-text opacity-75 small fw-bold">Not Interested</span>
+                                    <strong class="text-brand-text">{{ status_dict.NOT_INTERESTED }}</strong>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-danger"
+                                        style="width: {% widthratio status_dict.NOT_INTERESTED total_leads 100 %}%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assigned Leads List (Read-Only) -->
+            <div class="card stat-card">
+                <div
+                    class="card-header bg-slate-50 dark:bg-slate-900/50 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-brand-text fw-bold"><i class="bi bi-list-ul me-2 text-primary"></i>My Assigned
+                        Leads (<span id="displayedCount" class="text-brand-primary">{{ total_leads }}</span>)</h5>
+                    <div>
+                        <select class="form-select form-select-sm" id="statusFilter"
+                            style="width: auto; display: inline-block;">
+                            <option value="all">All Status</option>
+                            <option value="NOT_CONTACTED">Not Contacted</option>
+                            <option value="SENT,DELIVERED,READ">In Progress</option>
+                            <option value="REPLIED">Replied</option>
+                            <option value="DEAL">Deals</option>
+                            <option value="NOT_INTERESTED">Not Interested</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Lead</th>
+                                    <th>City</th>
+                                    <th>Status</th>
+                                    <th>Last Contact</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lead in assigned_leads %}
+                                <tr data-status="{{ lead.outreach_status.status }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-shop me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ lead.name }}</div>
+                                                {% if lead.contact_details.phone_whatsapp %}
+                                                <small class="text-muted"><i class="bi bi-whatsapp"></i>
+                                                    {{ lead.contact_details.phone_whatsapp }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ lead.city }}</td>
+                                    <td>
+                                        <span class="badge
+                                    {% if lead.outreach_status.status == 'DEAL' %}bg-success
+                                    {% elif lead.outreach_status.status == 'REPLIED' or lead.outreach_status.status == 'INTERESTED' %}bg-info
+                                    {% elif lead.outreach_status.status == 'SENT' or lead.outreach_status.status == 'DELIVERED' or lead.outreach_status.status == 'READ' %}bg-primary
+                                    {% elif lead.outreach_status.status == 'NOT_INTERESTED' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                            {{ lead.outreach_status.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if lead.outreach_status.last_contact_date %}
+                                        {{ lead.outreach_status.last_contact_date|timesince }} ago
+                                        {% else %}
+                                        <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'lead_detail' lead.id %}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No leads assigned yet
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End Overview Tab -->
+
+        <!-- Team Management Tab -->
+        {% if subordinates %}
+        <div class="tab-pane fade" id="team" role="tabpanel" aria-labelledby="team-tab">
+            <div class="card stat-card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>My Sales Team</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Agent</th>
+                                    <th>Status</th>
+                                    <th>Assigned Leads</th>
+                                    <th>Total Earned</th>
+                                    <th>Balance</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in subordinates %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle bg-light text-primary me-3 border"
+                                                style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                                {{ sub.user.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ sub.user.username }}</div>
+                                                <small class="text-muted">{{ sub.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge {% if sub.status == 'online' %}bg-success{% elif sub.status == 'away' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ sub.status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark fs-6">{{ sub.assigned_count }} Leads</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-success fw-bold">{{ sub.total_earned }}</span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge {% if sub.current_balance > 0 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ sub.current_balance }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'sales_agent_profile' sub.user.id %}"
+                                            class="btn btn-sm btn-outline-primary shadow-sm" title="View Profile">
+                                            <i class="bi bi-person-circle"></i> View Profile
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End Team Tab -->
+        {% endif %}
+
+        <!-- History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+            <div class="card stat-card shadow-sm border-secondary">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>My Activity History</h5>
+                    <a href="{% url 'agent_history_full' agent.id %}" class="btn btn-sm btn-outline-light border-0">
+                        View Full Log <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in history_logs %}
+                                <tr>
+                                    <td class="small">{{ log.created_at|date:"M d, H:i" }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if log.action_type == 'CONFIG_UPDATE' %}bg-info
+                                            {% elif log.action_type == 'PAYOUT_RECORDED' %}bg-success
+                                            {% elif log.action_type == 'LEAD_TRANSFER' %}bg-warning text-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ log.get_action_type_display }}
+                                        </span>
+                                    </td>
+                                    <td class="small">{{ log.details }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        No history records available.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End Tab Content -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const agentId = {{ agent.id }};
+    let performanceChart;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Load performance data and render chart
+        loadPerformanceData();
+
+        // Status filter functionality
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterLeads);
+        }
+    });
+
+    function copyPaymentLink() {
+        const link = document.getElementById('paymentLink').value;
+        const btn = document.getElementById('copyLinkBtn');
+        const originalHtml = btn.innerHTML;
+
+        navigator.clipboard.writeText(link).then(() => {
+            btn.innerHTML = '<i class="bi bi-check2-all me-1 text-success"></i> Link Copied!';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 2500);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy payment link. Please try again.');
+        });
+    }
+
+    function filterLeads() {
+        const filterValue = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('tbody tr[data-status]');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            if (filterValue === 'all') {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                const filterStatuses = filterValue.split(',');
+                if (filterStatuses.includes(status)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+
+        // Update displayed count
+        document.getElementById('displayedCount').textContent = visibleCount;
+    }
+
+    function loadPerformanceData() {
+        fetch(`/team/${agentId}/stats/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderPerformanceChart(data.data.daily_stats);
+                }
+            })
+            .catch(error => console.error('Error loading performance data:', error));
+    }
+
+    function renderPerformanceChart(dailyStats) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+
+        const labels = dailyStats.map(stat => new Date(stat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const dealsData = dailyStats.map(stat => stat.deals);
+        const messagesData = dailyStats.map(stat => stat.messages);
+
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Deals Closed',
+                        data: dealsData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Messages Sent',
+                        data: messagesData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

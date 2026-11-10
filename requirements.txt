@@ -1,0 +1,14 @@
+Django>=6.0,<6.1
+python-decouple>=3.8
+django-crispy-forms>=2.3
+crispy-bootstrap5>=2024.10
+Pillow>=11.0
+requests>=2.32
+aiohttp>=3.11
+beautifulsoup4>=4.12
+pandas>=2.2
+openpyxl>=3.1
+phonenumbers>=8.13
+selenium>=4.25
+selenium-stealth>=1.0.6
+webdriver-manager>=4.0.2

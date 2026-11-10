@@ -1,0 +1,231 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block title %}Pending Deals{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 dark:text-slate-100">
+                <i class="bi bi-briefcase-fill me-2 text-primary"></i>Deal Requests
+            </h4>
+            <p class="text-muted small mb-0">Review and confirm deals submitted by sales agents</p>
+        </div>
+        {% if pending_count > 0 %}
+        <span class="badge bg-danger rounded-pill fs-6 px-3 py-2">
+            {{ pending_count }} Pending
+        </span>
+        {% else %}
+        <span class="badge bg-success rounded-pill fs-6 px-3 py-2">
+            All Cleared ✓
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Alert Toast Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+    <!-- PENDING SECTION -->
+    {% if pending %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 dark:bg-slate-800 dark:border dark:border-slate-700">
+        <div class="card-header p-3 rounded-top-3 d-flex align-items-center gap-2"
+            style="background-color: var(--brand-primary);">
+            <i class="bi bi-hourglass-split text-white fs-5"></i>
+            <h5 class="mb-0 text-white fw-bold">Pending Deals ({{ pending_count }})</h5>
+        </div>
+        <div class="card-body p-0">
+            {% for deal in pending %}
+            <div class="deal-row d-flex flex-wrap align-items-center justify-content-between gap-3 p-4 border-bottom dark:border-slate-700"
+                id="deal-{{ deal.id }}">
+                <!-- Lead Info -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl d-flex align-items-center justify-center text-white fw-bold fs-5"
+                        style="width:44px;height:44px;background-color:var(--brand-primary);border-radius:12px;">
+                        {{ deal.lead.name|first|upper }}
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold dark:text-slate-100">{{ deal.lead.name }}</h6>
+                        <small class="text-muted dark:text-slate-400">
+                            <i
+                                class="bi bi-person me-1"></i>{{ deal.sales_agent.get_full_name|default:deal.sales_agent.username }}
+                            &bull;
+                            <i class="bi bi-geo-alt me-1"></i>{{ deal.lead.city }}
+                            &bull;
+                            <i class="bi bi-clock me-1"></i>{{ deal.created_at|timesince }} ago
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Deal Price & Commission -->
+                <div class="text-center">
+                    <p class="mb-0 fw-bold fs-5 dark:text-slate-100">{{ deal.price|floatformat:0 }} EGP</p>
+                    <small class="text-success fw-bold">
+                        Commission: ~{{ deal.commission_amount|floatformat:0 }} EGP
+                    </small>
+                </div>
+
+                <!-- Notes -->
+                {% if deal.notes %}
+                <div class="flex-grow-1 px-2">
+                    <p class="mb-0 small text-muted dark:text-slate-400 fst-italic">"{{ deal.notes }}"</p>
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm fw-bold px-3 shadow-sm"
+                        onclick="handleDeal({{ deal.id }}, 'confirm')">
+                        <i class="bi bi-check-circle me-1"></i> Confirm
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm fw-bold px-3"
+                        onclick="handleDeal({{ deal.id }}, 'reject')">
+                        <i class="bi bi-x-circle me-1"></i> Reject
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 dark:bg-slate-800">
+        <div class="card-body py-5 text-center text-muted dark:text-slate-400">
+            <i class="bi bi-check2-circle fs-1 text-success opacity-50 d-block mb-3"></i>
+            <h6 class="fw-bold">No Pending Deals</h6>
+            <p class="small mb-0">All deal requests have been reviewed.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- APPROVED SECTION -->
+    {% if approved %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 dark:bg-slate-800 dark:border dark:border-slate-700">
+        <div class="card-header p-3 rounded-top-3 bg-success text-white d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <h5 class="mb-0 fw-bold">Recently Approved</h5>
+        </div>
+        <div class="card-body p-0">
+            {% for deal in approved %}
+            <div
+                class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 border-bottom dark:border-slate-700">
+                <div>
+                    <h6 class="mb-0 fw-bold dark:text-slate-100">
+                        {{ deal.lead.name }}
+                        {% if deal.sales_agent.is_staff %}
+                        <span class="badge bg-primary-subtle text-primary border border-primary/20 ms-1"
+                            style="font-size: 0.65rem;">
+                            <i class="bi bi-shield-check"></i> Admin Closed
+                        </span>
+                        {% endif %}
+                    </h6>
+                    <small class="text-muted dark:text-slate-400">
+                        Agent: {{ deal.sales_agent.get_full_name|default:deal.sales_agent.username }}
+                        &bull; Approved by {{ deal.reviewed_by.username|default:"System" }}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <span class="fw-bold text-success">{{ deal.price|floatformat:0 }} EGP</span><br>
+                    <small class="text-muted">Commission: {{ deal.commission_amount|floatformat:0 }} EGP</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REJECTED SECTION -->
+    {% if rejected %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 dark:bg-slate-800 dark:border dark:border-slate-700">
+        <div class="card-header p-3 rounded-top-3 bg-danger text-white d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle-fill fs-5"></i>
+            <h5 class="mb-0 fw-bold">Recently Rejected</h5>
+        </div>
+        <div class="card-body p-0">
+            {% for deal in rejected %}
+            <div
+                class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 border-bottom dark:border-slate-700">
+                <div>
+                    <h6 class="mb-0 fw-bold dark:text-slate-100">{{ deal.lead.name }}</h6>
+                    <small class="text-muted dark:text-slate-400">
+                        Agent: {{ deal.sales_agent.get_full_name|default:deal.sales_agent.username }}
+                        &bull; Rejected by {{ deal.reviewed_by.username|default:"System" }}
+                    </small>
+                </div>
+                <span class="badge bg-danger-subtle text-danger">Rejected</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('alertContainer');
+        const id = 'toast-' + Date.now();
+        const bg = type === 'success' ? 'bg-success' : 'bg-danger';
+        container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast show align-items-center text-white ${bg} border-0 mb-2 shadow" role="alert">
+            <div class="d-flex">
+                <div class="toast-body fw-bold">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('${id}').remove()"></button>
+            </div>
+        </div>
+    `);
+        setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 5000);
+    }
+
+    async function handleDeal(dealId, action) {
+        const label = action === 'confirm' ? 'Confirm' : 'Reject';
+        if (!confirm(`Are you sure you want to ${label} this deal?`)) return;
+
+        const url = action === 'confirm'
+            ? `/deals/${dealId}/confirm/`
+            : `/deals/${dealId}/reject/`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+                const row = document.getElementById(`deal-${dealId}`);
+                if (row) {
+                    row.style.transition = 'opacity 0.5s';
+                    row.style.opacity = '0';
+                    setTimeout(() => { row.remove(); location.reload(); }, 600);
+                }
+            } else {
+                showToast(data.error || 'Something went wrong.', 'danger');
+            }
+        } catch (e) {
+            showToast('Network error. Please try again.', 'danger');
+        }
+    }
+</script>
+{% endblock %}

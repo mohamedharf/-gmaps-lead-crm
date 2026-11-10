@@ -1,0 +1,123 @@
+{% extends "sales/base.html" %}
+
+{% block title %}إنشاء حساب مدير جديد - {{ system_settings.site_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl w-full">
+        <!-- Breadcrumbs -->
+        <nav class="flex mb-8 justify-center" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3 rtl:space-x-reverse">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'manage_team' %}"
+                        class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-primary transition-colors">
+                        <i class="bi bi-people-fill me-2"></i>
+                        ادارة الفريق
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="bi bi-chevron-left text-slate-400 mx-2"></i>
+                        <span class="text-sm font-medium text-slate-400">إضافة مدير (Admin)</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
+        <div
+            class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-red-600/5">
+            <!-- Header Section -->
+            <div class="relative px-8 py-10 bg-gradient-to-br from-red-500/10 via-transparent to-transparent">
+                <div class="absolute top-0 right-0 p-8 opacity-10">
+                    <i class="bi bi-shield-lock-fill text-8xl text-red-600"></i>
+                </div>
+
+                <div class="relative z-10 flex flex-col items-center text-center">
+                    <div
+                        class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/30 mb-6 transform rotate-3">
+                        <i class="bi bi-shield-lock-fill text-white text-3xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">إنشاء حساب مدير جديد</h2>
+                    <p class="text-slate-500 dark:text-slate-400">تحذير: حسابات المديرين لها صلاحيات كاملة على النظام
+                    </p>
+                </div>
+            </div>
+
+            <div class="px-8 pb-10">
+                <!-- Warning Notice -->
+                <div
+                    class="mb-8 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400 rounded-r-2xl flex items-start space-x-3 rtl:space-x-reverse">
+                    <i class="bi bi-exclamation-triangle-fill text-amber-500 mt-1"></i>
+                    <div>
+                        <p class="text-sm font-bold text-amber-800 dark:text-amber-300">تنبيه هام</p>
+                        <p class="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                            حساب المدير (Admin) يمكنه الوصول إلى كل الإعدادات، البيانات المالية، وإدارة المستخدمين. يرجى
+                            التأكد من هوية الشخص قبل منح هذه الصلاحيات.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="space-y-2">
+                        <label
+                            class="block text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">{{ field.label }}</label>
+                        <div class="relative group">
+                            <span
+                                class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-red-500 transition-colors">
+                                {% if 'user' in field.name.lower or 'name' in field.name.lower %}
+                                <i class="bi bi-person"></i>
+                                {% elif 'pass' in field.name.lower %}
+                                <i class="bi bi-lock"></i>
+                                {% elif 'email' in field.name.lower %}
+                                <i class="bi bi-envelope"></i>
+                                {% else %}
+                                <i class="bi bi-pencil"></i>
+                                {% endif %}
+                            </span>
+
+                            <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}"
+                                {% if field.field.required %}required{% endif %}
+                                {% if field.value %}value="{{ field.value }}" {% endif %}
+                                class="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none"
+                                placeholder="ادخل {{ field.label }}">
+                        </div>
+                        {% if field.help_text %}
+                        <p class="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="text-xs text-red-500 font-medium mt-1 ml-1">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                        <button type="submit"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-red-600/25 transform active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                            <i class="bi bi-shield-check text-xl"></i>
+                            <span>تأكيد وإنشاء المدير</span>
+                        </button>
+                        <a href="{% url 'manage_team' %}"
+                            class="sm:w-32 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center">
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    input:focus {
+        background-color: white !important;
+    }
+
+    .dark input:focus {
+        background-color: rgba(15, 23, 42, 0.8) !important;
+    }
+</style>
+{% endblock %}

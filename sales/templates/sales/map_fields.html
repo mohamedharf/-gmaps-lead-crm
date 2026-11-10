@@ -1,0 +1,95 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Map Fields - {{ dataset_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Map Columns for: {{ dataset_name }}</h4>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted">Match the columns from your uploaded file to the system fields. Check the box to make
+                sure the column is visible in the Data Explorer table by default.</p>
+
+            <form method="POST" action="{% url 'map_excel_fields' %}">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>System Field</th>
+                                <th>File Column Header</th>
+                                <th>Display Name in Table</th>
+                                <th class="text-center">Show in Data Explorer?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for db_key, db_label in db_fields.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ db_label }}</strong>
+                                    {% if db_key == 'name' %}<span class="text-danger">*</span> (Required){% endif %}
+                                </td>
+                                <td>
+                                    <select class="form-select column-select" name="map_{{ db_key }}"
+                                        data-target="label_{{ db_key }}" data-default="{{ db_label }}">
+                                        <option value="">-- Do Not Import --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}"
+                                            {% if db_key|lower in col|lower or col|lower in db_label|lower %}selected{% endif %}>
+                                            {{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="label_{{ db_key }}"
+                                        id="label_{{ db_key }}" value="{{ db_label }}"
+                                        placeholder="e.g. {{ db_label }}">
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                            name="visible_columns" value="{{ db_key }}"
+                                            {% if db_key in 'name,city,rating,phone_primary,status' %}checked{% endif %}>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'import_data' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Cancel & Go Back
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle me-2"></i>Import Data
+                    </button>
+                </div>
+            </form>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Auto-fill Display Name based on selected File Column Header initially
+                    document.querySelectorAll('.column-select').forEach(function (select) {
+                        const targetId = select.getAttribute('data-target');
+                        const targetInput = document.getElementById(targetId);
+                        const defaultLabel = select.getAttribute('data-default');
+
+                        // On load, if it's selected, use the selected text, otherwise default
+                        if (select.value && targetInput.value === defaultLabel) {
+                            targetInput.value = select.options[select.selectedIndex].text;
+                        }
+
+                        select.addEventListener('change', function () {
+                            if (this.value) {
+                                targetInput.value = this.options[this.selectedIndex].text;
+                            } else {
+                                targetInput.value = defaultLabel;
+                            }
+                        });
+                    });
+                });
+            </script>
+            {% endblock %}

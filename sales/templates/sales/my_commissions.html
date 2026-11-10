@@ -1,0 +1,95 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}My Commissions{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">My Commissions</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow-sm border-0 p-3 h-100">
+                <h6 class="text-white-50">Direct Commission</h6>
+                <h2 class="fw-bold mb-0">{{ total_commission }} EGP</h2>
+                <small class="mt-2"><i class="bi bi-person me-1"></i> From {{ orders_count }} own deals</small>
+            </div>
+        </div>
+        {% if is_manager %}
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow-sm border-0 p-3 h-100">
+                <h6 class="text-white-50">Team Commission</h6>
+                <h2 class="fw-bold mb-0 text-white">{{ total_team_commission }} EGP</h2>
+                <small class="mt-2 text-white-50"><i class="bi bi-people me-1"></i> From subordinates</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white shadow-sm border-0 p-3 h-100">
+                <h6 class="text-white-50">Combined Earnings</h6>
+                <h2 class="fw-bold mb-0 text-warning">{{ combined_earnings }} EGP</h2>
+                <small class="mt-2 text-white-50"><i class="bi bi-plus-circle me-1"></i> Direct + Team</small>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-md-{% if is_manager %}3{% else %}9{% endif %}">
+            <div class="card bg-primary text-white shadow-sm border-0 p-3 h-100">
+                <h6 class="text-white-50">Total Revenue Generated</h6>
+                <h2 class="fw-bold mb-0">{{ total_revenue }} EGP</h2>
+                <small class="mt-2"><i class="bi bi-graph-up me-1"></i> Total deal volume</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white p-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-journal-check me-2 text-success"></i>Successful Sales History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Lead / Customer</th>
+                            <th>Sale Date</th>
+                            <th>Sale Price</th>
+                            <th>Commission Rate</th>
+                            <th>Your Commission</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td class="fw-bold">#{{ order.id }}</td>
+                            <td>
+                                <div class="fw-bold">{{ order.lead.name|default:order.customer_name }}</div>
+                                <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>
+                                    {{ order.lead.city }}</small>
+                            </td>
+                            <td>{{ order.paid_at|date:"M d, Y" }}</td>
+                            <td>{{ order.price }} {{ order.currency }}</td>
+                            <td><span class="badge bg-info text-white">{{ order.commission_rate }}%</span></td>
+                            <td class="fw-bold text-success">+{{ order.commission_amount }} EGP</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-emoji-smile fs-1 d-block mb-3 text-white-50"></i>
+                                <h5>No sales yet!</h5>
+                                <p>Start contacting leads to close your first deal.</p>
+                                <a href="{% url 'data_explorer' %}" class="btn btn-primary btn-sm mt-2">Go to My
+                                    Leads</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

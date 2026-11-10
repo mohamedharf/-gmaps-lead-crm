@@ -1,0 +1,99 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Edit Dataset - {{ dataset.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Dataset: {{ dataset.name }}</h4>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted">Update the dataset name or modify which columns are visible in the Data Explorer.</p>
+
+            <form method="POST" action="{% url 'edit_dataset' dataset.id %}">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Dataset Name</label>
+                    <input type="text" class="form-control" name="name" value="{{ dataset.name }}" required>
+                </div>
+
+                <div class="card bg-light mb-4 border-1">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-cart-plus me-2"></i>Product & Checkout Overrides
+                            (Optional)</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">Leave these fields blank to use the global system defaults.</p>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold">Product Name Override</label>
+                                <input type="text" class="form-control" name="product_name"
+                                    value="{{ dataset.product_name|default:'' }}"
+                                    placeholder="e.g. Special Ramadan Package">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Product Price Override (EGP)</label>
+                                <input type="number" step="0.01" class="form-control" name="product_price"
+                                    value="{{ dataset.product_price|default:'' }}" placeholder="e.g. 5000">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Product Description Override</label>
+                                <textarea class="form-control" name="product_description" rows="2"
+                                    placeholder="Describe the specific product for this dataset...">{{ dataset.product_description|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-3 border-bottom pb-2">Column Settings</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>System Field</th>
+                                <th>Display Name in Table</th>
+                                <th class="text-center">Show in Data Explorer?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for db_key, db_label in db_fields.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ db_label }}</strong>
+                                </td>
+                                <td>
+                                    <!-- Use the saved label if it exists, otherwise use the default db_label -->
+                                    <input type="text" class="form-control" name="label_{{ db_key }}"
+                                        id="label_{{ db_key }}"
+                                        {% for k, v in dataset.column_labels.items %}{% if k == db_key %}value="{{ v }}"
+                                        {% endif %}{% endfor %} placeholder="e.g. {{ db_label }}"
+                                        {% if not dataset.column_labels|length %}value="{{ db_label }}" {% endif %}>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                            name="visible_columns" value="{{ db_key }}"
+                                            {% if db_key in dataset.visible_columns %}checked{% endif %}>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'manage_system_settings' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Cancel & Go Back
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

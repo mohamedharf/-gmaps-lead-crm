@@ -1,0 +1,821 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>{{ sys_settings.site_name|default:"GMaps Lead CRM" }} | {% block title %}Dashboard{% endblock %}</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <meta name="theme-color" content="{{ sys_settings.primary_color|default:'#0d6efd' }}">
+    <link rel="apple-touch-icon" href="/static/sales/img/logo-192.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '{{ sys_settings.primary_color|default:"#0d6efd" }}',
+                            secondary: '{{ sys_settings.secondary_color|default:"#6c757d" }}',
+                            text: '{{ sys_settings.text_color|default:"#1e293b" }}',
+                            dark: {
+                                primary: '{{ sys_settings.dark_primary_color|default:"#3b82f6" }}',
+                                secondary: '{{ sys_settings.dark_secondary_color|default:"#475569" }}',
+                                text: '{{ sys_settings.dark_text_color|default:"#f1f5f9" }}',
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --brand-primary: {{ sys_settings.primary_color|default:"#0d6efd" }};
+                --brand-secondary: {{ sys_settings.secondary_color|default:"#6c757d" }};
+                --brand-text: {{ sys_settings.text_color|default:"#1e293b" }};
+            }
+            body { 
+                color: var(--brand-text);
+                @apply transition-colors duration-200 bg-slate-50;
+            }
+            .dark { color-scheme: dark; }
+
+            /* Light Mode Global Text Overrides */
+            html:not(.dark) body .text-slate-900, html:not(.dark) body .text-slate-800, html:not(.dark) body .text-dark, 
+            html:not(.dark) body .card-title, html:not(.dark) body .form-label, html:not(.dark) body .breadcrumb-item.active { 
+                color: var(--brand-text) !important; 
+            }
+            html:not(.dark) body .text-slate-700, html:not(.dark) body .text-slate-600, html:not(.dark) body .text-slate-500, 
+            html:not(.dark) body .text-muted, html:not(.dark) body .form-text, html:not(.dark) body .breadcrumb-item { 
+                color: var(--brand-text) !important;
+                opacity: 0.75 !important; 
+            }
+            html:not(.dark) body .breadcrumb-item + .breadcrumb-item::before { color: var(--brand-text); opacity: 0.5; }
+            html.dark body { 
+                @apply bg-slate-900 !important; 
+                --brand-primary: {{ sys_settings.dark_primary_color|default:"#3b82f6" }};
+                --brand-secondary: {{ sys_settings.dark_secondary_color|default:"#475569" }};
+                --brand-text: {{ sys_settings.dark_text_color|default:"#f1f5f9" }};
+                color: var(--brand-text) !important;
+            }
+            /* Global Dark Layout Overrides - Corrected Selector */
+            html.dark body aside, html.dark body header, html.dark body nav.fixed-bottom, html.dark body .card, html.dark body .modal-content, html.dark body .dropdown-menu {
+                @apply bg-slate-800 border-slate-700 !important;
+                /* Allow text color to be inherited or set by brand classes */
+            }
+            
+            /* Comprehensive Utility Overrides */
+            .dark .bg-white, .dark .bg-light, .dark .bg-body-tertiary { @apply bg-slate-800 !important; }
+            .dark .bg-slate-50, .dark .bg-slate-100 { @apply bg-slate-900 !important; }
+            .dark .bg-slate-200 { @apply bg-slate-800 !important; }
+            
+            .dark .border-slate-50, .dark .border-slate-100, .dark .border-slate-200, .dark .border, .dark .card-header, .dark .card-footer, .dark .modal-header, .dark .modal-footer { 
+                @apply border-slate-700 !important; 
+            }
+            
+            /* Optimized Global Text Mapping (Covers both modes via variables) */
+            .text-slate-900, .text-slate-800, .text-dark, .card-title, .form-label, .breadcrumb-item.active { 
+                color: var(--brand-text) !important; 
+            }
+            .text-slate-700, .text-slate-600, .text-slate-500, .text-muted, .form-text, .breadcrumb-item { 
+                color: var(--brand-text) !important;
+                opacity: 0.75 !important; 
+            }
+            .breadcrumb-item + .breadcrumb-item::before { color: var(--brand-text); opacity: 0.5; }
+            
+            /* Badge and Payout specifically */
+            .dark .badge.text-dark { color: #0f172a !important; } /* Keep dark text on bright badges like warning/info */
+            .dark .badge.bg-info, .dark .badge.bg-warning { @apply brightness-90 !important; }
+            
+            /* Special components & scrollbars */
+            .dark .bg-blue-50, .dark .bg-emerald-50, .dark .bg-sky-50, .dark .bg-amber-50 {
+                @apply bg-slate-800/50 !important;
+            }
+            .dark ::-webkit-scrollbar-track { @apply bg-slate-900 !important; }
+            .dark ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full hover:bg-slate-600 !important; }
+            
+            /* Sidebar & Nav Bottom specifically - Corrected Selector */
+            html.dark body aside, html.dark body header, html.dark body .fixed-bottom, html.dark body .card, html.dark body .modal-content { 
+                @apply bg-slate-800 border-slate-700 !important;
+            }
+            .dark .sidebar-link:hover { @apply bg-slate-700/50 !important; }
+            .dark .border-t, .dark .border-b, .dark .border-r, .dark .border-l { @apply border-slate-700 !important; }
+            
+            /* Inline style overrides for custom hovers */
+            .dark tr[style*="cursor: pointer"]:hover, .dark .hover\:bg-slate-50\/50:hover {
+                background-color: rgba(51, 65, 85, 0.5) !important;
+            }
+
+            /* Table Dark Mode */
+            .dark table, .dark th, .dark td, .dark .table { @apply bg-slate-800 border-slate-700 text-slate-100 !important; }
+            .dark thead th { @apply bg-slate-900 !important; }
+            .dark .table-hover tbody tr:hover { @apply bg-slate-700/50 !important; }
+            .dark .divide-slate-50 > * + *, .dark .divide-slate-100 > * + *, .dark .table > :not(caption) > * > * { 
+                @apply border-slate-700 !important; 
+                border-color: #334155 !important;
+            }
+
+            /* Form Dark Mode */
+            .dark .form-control, .dark .form-select, .dark .input-group-text, .dark .form-check-input {
+                @apply bg-slate-900 border-slate-700 !important;
+                color: var(--brand-text) !important;
+            }
+            .dark .form-control:focus, .dark .form-select:focus {
+                @apply bg-slate-900 border-brand-primary/50 ring-1 ring-brand-primary/20 !important;
+            }
+
+            /* Custom Sidebar Scrollbar */
+            .sidebar-datasets-scroll::-webkit-scrollbar {
+                width: 4px;
+            }
+            .sidebar-datasets-scroll::-webkit-scrollbar-track {
+                @apply bg-transparent;
+            }
+            .sidebar-datasets-scroll::-webkit-scrollbar-thumb {
+                @apply bg-slate-200 dark:bg-slate-700 rounded-full;
+            }
+            .sidebar-datasets-scroll::-webkit-scrollbar-thumb:hover {
+                @apply bg-slate-300 dark:bg-slate-600;
+            }
+
+            /* Global Section Scrollbar */
+            .custom-scrollbar-section::-webkit-scrollbar {
+                width: 6px;
+            }
+            .custom-scrollbar-section::-webkit-scrollbar-track {
+                @apply bg-slate-100 dark:bg-slate-800/50 rounded-full;
+            }
+            .custom-scrollbar-section::-webkit-scrollbar-thumb {
+                @apply bg-slate-300 dark:bg-slate-600 rounded-full border-2 border-transparent bg-clip-padding;
+            }
+            .custom-scrollbar-section::-webkit-scrollbar-thumb:hover {
+                @apply bg-slate-400 dark:bg-slate-500;
+            }
+        }
+        @layer components {
+            .btn-brand-primary {
+                background-color: var(--brand-primary);
+                @apply text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:opacity-90 active:scale-95 transition-all;
+            }
+            .sidebar-link {
+                @apply flex items-center px-4 py-3 rounded-xl transition-all;
+                color: var(--brand-text);
+                opacity: 0.7;
+            }
+            .sidebar-link:hover {
+                @apply bg-slate-100 dark:bg-slate-800/50;
+                opacity: 1;
+            }
+            .sidebar-link.active {
+                background-color: var(--brand-primary) !important;
+                color: #fff !important;
+                opacity: 1 !important;
+            }
+            .nav-bottom-item { 
+                @apply flex flex-col items-center justify-center w-full h-full; 
+                color: var(--brand-text);
+                opacity: 0.6;
+            }
+            .nav-bottom-item.active { 
+                color: var(--brand-primary) !important; 
+                opacity: 1 !important;
+            }
+        }
+    </style>
+    <style>
+        /* High-Specificity Brand Overrides (preserve Bootstrap opacity utilities like bg-opacity-10) */
+        html body .bg-primary:not([class*="bg-opacity-"]) {
+            background-color: var(--brand-primary) !important;
+        }
+
+        html body .btn-primary {
+            background-color: var(--brand-primary) !important;
+            border-color: var(--brand-primary) !important;
+        }
+
+        html body .text-primary {
+            color: var(--brand-primary) !important;
+        }
+
+        /* Primary Hover/Focus states */
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            filter: brightness(90%) !important;
+            background-color: var(--brand-primary) !important;
+            border-color: var(--brand-primary) !important;
+        }
+
+        html body .bg-secondary:not([class*="bg-opacity-"]) {
+            background-color: var(--brand-secondary) !important;
+        }
+
+        html body .btn-secondary {
+            background-color: var(--brand-secondary) !important;
+            border-color: var(--brand-secondary) !important;
+            color: #fff !important;
+        }
+
+        .btn-secondary:hover,
+        .btn-secondary:focus,
+        .btn-secondary:active {
+            filter: brightness(90%) !important;
+            background-color: var(--brand-secondary) !important;
+            border-color: var(--brand-secondary) !important;
+        }
+
+        html body .btn-outline-secondary {
+            color: var(--brand-secondary) !important;
+            border-color: var(--brand-secondary) !important;
+        }
+
+        html body .btn-outline-secondary:hover {
+            background-color: var(--brand-secondary) !important;
+            color: #fff !important;
+        }
+
+        html body .text-secondary {
+            color: var(--brand-secondary) !important;
+        }
+
+        /* Additional Secondary Component Overrides */
+        html body .badge.bg-secondary {
+            background-color: var(--brand-secondary) !important;
+            color: #fff !important;
+        }
+
+        html body .border-secondary {
+            border-color: var(--brand-secondary) !important;
+        }
+
+        /* Direct Utility Support for Brand Colors (Globally available) */
+        .text-brand-primary {
+            color: var(--brand-primary) !important;
+        }
+
+        .text-brand-secondary {
+            color: var(--brand-secondary) !important;
+        }
+
+        .text-brand-text {
+            color: var(--brand-text) !important;
+        }
+
+        .bg-brand-primary {
+            background-color: var(--brand-primary) !important;
+        }
+
+        .bg-brand-secondary {
+            background-color: var(--brand-secondary) !important;
+        }
+
+        .border-brand-primary {
+            border-color: var(--brand-primary) !important;
+        }
+
+        .border-brand-secondary {
+            border-color: var(--brand-secondary) !important;
+        }
+    </style>
+    <style>
+        .theme-toggle-btn {
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+    
+    <script>
+        // Apply theme early to prevent FOUC (Flash of Unstyled Content)
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="h-full overflow-x-hidden {% if user.is_authenticated %}md:flex{% endif %}">
+
+    {% if user.is_authenticated %}
+    {% block sidebar %}
+    <!-- Sidebar (Desktop Only) -->
+    <aside
+        class="hidden md:flex flex-col w-64 h-screen bg-white border-r border-slate-200 fixed left-0 top-0 z-40 transition-colors duration-200">
+        <div class="p-6 flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                {% if sys_settings.logo %}
+                <img src="{{ sys_settings.logo.url }}" alt="Logo" class="w-8 h-8 rounded object-contain">
+                {% else %}
+                <i class="bi bi-robot" style="color: var(--brand-primary);"></i>
+                {% endif %}
+                <span>{{ sys_settings.site_name|default:"RMS" }}</span>
+            </h1>
+            <div class="flex items-center gap-1">
+                <!-- Notifications Dropdown (Desktop) -->
+                <div class="dropdown">
+                    <button class="theme-toggle-btn text-slate-500 position-relative" type="button"
+                        id="notificationDropdownDesktop" data-bs-toggle="dropdown" aria-expanded="False">
+                        <i class="bi bi-bell"></i>
+                        <span id="notificationBadgeDesktop"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                            style="display: none; font-size: 0.55rem; padding: 0.25em 0.4em;">0</span>
+                    </button>
+                    <ul class="dropdown-menu shadow-sm border-slate-200 dark:border-slate-700"
+                        aria-labelledby="notificationDropdownDesktop"
+                        style="width: 300px; max-height: 400px; overflow-y: auto;">
+                        <li>
+                            <div class="dropdown-header d-flex justify-content-between align-items-center pb-2">
+                                <span class="font-bold text-slate-700 dark:text-slate-200">Notifications</span>
+                                <div>
+                                    <button class="btn btn-link p-0 text-xs text-brand-primary mr-2"
+                                        onclick="markAllNotificationsRead(event);" style="text-decoration: none;">Mark
+                                        read</button>
+                                    <a href="{% url 'notifications:list' %}"
+                                        class="text-xs text-slate-500 hover:text-brand-primary"
+                                        style="text-decoration: none;">View All</a>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider border-slate-100 dark:border-slate-700">
+                        </li>
+                        <div id="notificationListDesktop">
+                            <li><span class="dropdown-item text-muted text-center py-3 text-sm">Loading...</span></li>
+                        </div>
+                    </ul>
+                </div>
+                <!-- Theme toggle -->
+                <div onclick="toggleDarkMode()" class="theme-toggle-btn text-slate-500">
+                    <i class="bi bi-moon-stars dark:hidden"></i>
+                    <i class="bi bi-sun hidden dark:block"></i>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar-section">
+            <a href="{% url 'dashboard' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 text-lg mr-3"></i> Dashboard
+            </a>
+
+            <a href="{% url 'data_explorer' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'data_explorer' %}active{% endif %}">
+                <i class="bi bi-table text-lg mr-3"></i> {% if request.user.is_staff %}All Data{% else %}My
+                Leads{% endif %}
+            </a>
+
+            {% if all_datasets %}
+            <div class="pt-4 pb-2 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Datasets</div>
+            <div class="max-h-60 overflow-y-auto px-2 space-y-1 sidebar-datasets-scroll">
+                {% for ds in all_datasets %}
+                <a href="{% url 'data_explorer_dataset' ds.id %}"
+                    class="sidebar-link py-2 text-sm {% if current_dataset.id == ds.id %}active{% endif %}">
+                    <i class="bi bi-folder-fill mr-3 text-amber-400"></i> {{ ds.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if request.user.is_staff %}
+            <a href="{% url 'import_data' %}" class="sidebar-link py-2 text-sm text-green-600">
+                <i class="bi bi-plus-circle mr-3"></i> Import Data
+            </a>
+            <hr class="my-4 border-slate-100">
+            {% else %}
+            <hr class="my-4 border-slate-100">
+            {% endif %}
+
+            {% if request.user.is_staff %}
+            <a href="{% url 'sales_dashboard' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'sales_dashboard' %}active{% endif %}">
+                <i class="bi bi-graph-up-arrow text-lg mr-3"></i> Sales Dashboard
+            </a>
+            {% endif %}
+
+            {% if not request.user.is_staff %}
+            <a href="{% url 'my_profile' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'my_profile' %}active{% endif %}">
+                <i class="bi bi-person-circle text-lg mr-3"></i> My Profile
+            </a>
+            <a href="{% url 'my_commissions' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'my_commissions' %}active{% endif %}">
+                <i class="bi bi-wallet2 text-lg mr-3"></i> My Earnings
+            </a>
+            <a href="{% url 'manage_team' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'manage_team' %}active{% endif %}">
+                <i class="bi bi-people text-lg mr-3"></i> My Team
+            </a>
+            <a href="{% url 'user_settings' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'user_settings' %}active{% endif %}">
+                <i class="bi bi-gear text-lg mr-3"></i> Settings
+            </a>
+            {% endif %}
+
+            {% if request.user.is_staff %}
+            <div class="pt-4 pb-2 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Admin</div>
+            <a href="{% url 'manage_team' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'manage_team' %}active{% endif %}">
+                <i class="bi bi-people text-lg mr-3"></i> Sales Team
+            </a>
+            <a href="{% url 'pending_deals' %}"
+                class="sidebar-link flex items-center justify-between {% if request.resolver_match.url_name == 'pending_deals' %}active{% endif %}">
+                <span><i class="bi bi-briefcase text-lg mr-3"></i> Deals</span>
+                {% if pending_deals_count > 0 %}
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full text-white animate-pulse"
+                    style="background-color: #ef4444; min-width: 20px; text-align: center;">
+                    {{ pending_deals_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="{% url 'manage_system_settings' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'manage_system_settings' %}active{% endif %}">
+                <i class="bi bi-sliders text-lg mr-3"></i> Settings
+            </a>
+            <a href="{% url 'scraper_control' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'scraper_control' %}active{% endif %}">
+                <i class="bi bi-cloud-download text-lg mr-3"></i> Scraper
+            </a>
+            <a href="{% url 'user_settings' %}"
+                class="sidebar-link {% if request.resolver_match.url_name == 'user_settings' %}active{% endif %}">
+                <i class="bi bi-gear text-lg mr-3"></i> My Settings
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <div class="flex items-center gap-3 mb-4">
+                {% if request.user.sales_profile and request.user.sales_profile.profile_picture %}
+                <img src="{{ request.user.sales_profile.profile_picture.url }}" alt="Profile"
+                    class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 dark:border-slate-700 shadow-sm"
+                    style="border-color: {{ sys_settings.primary_color|default:'#0d6efd' }}">
+                {% else %}
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                    style="background-color: {{ sys_settings.primary_color|default:'#0d6efd' }}">
+                    {{ request.user.username|first|upper }}
+                </div>
+                {% endif %}
+                <div class="truncate">
+                    <p class="text-sm font-semibold truncate">
+                        {{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p class="text-xs text-slate-500 truncate">{{ request.user.email }}</p>
+                </div>
+            </div>
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 p-2 text-slate-600 hover:bg-slate-50 rounded-lg text-sm transition-colors border border-slate-200">
+                    <i class="bi bi-box-arrow-right"></i> Sign Out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Mobile Top Header -->
+    <header
+        class="md:hidden flex items-center justify-between px-6 h-16 bg-white border-b border-slate-200 sticky top-0 z-40 transition-colors duration-200">
+        <div class="flex items-center gap-2">
+            {% if sys_settings.logo %}
+            <img src="{{ sys_settings.logo.url }}" alt="Logo" class="w-8 h-8 rounded object-contain">
+            {% else %}
+            <i class="bi bi-robot text-brand-primary text-xl"></i>
+            {% endif %}
+            <span class="font-bold text-lg dark:text-slate-100">{{ sys_settings.site_name|default:"RMS" }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- Notifications Dropdown (Mobile) -->
+            <div class="dropdown">
+                <button class="theme-toggle-btn text-slate-500 position-relative" type="button"
+                    id="notificationDropdownMobile" data-bs-toggle="dropdown" aria-expanded="False">
+                    <i class="bi bi-bell text-lg"></i>
+                    <span id="notificationBadgeMobile"
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                        style="display: none; font-size: 0.55rem; padding: 0.25em 0.4em;">0</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-slate-200 dark:border-slate-700"
+                    aria-labelledby="notificationDropdownMobile"
+                    style="width: 280px; max-height: 350px; overflow-y: auto;">
+                    <li>
+                        <div class="dropdown-header d-flex justify-content-between align-items-center pb-2">
+                            <span class="font-bold text-slate-700 dark:text-slate-200">Notifications</span>
+                            <div>
+                                <button class="btn btn-link p-0 text-xs text-brand-primary mr-2"
+                                    onclick="markAllNotificationsRead(event);" style="text-decoration: none;">Mark
+                                    read</button>
+                                <a href="{% url 'notifications:list' %}"
+                                    class="text-xs text-slate-500 hover:text-brand-primary"
+                                    style="text-decoration: none;">View All</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider border-slate-100 dark:border-slate-700">
+                    </li>
+                    <div id="notificationListMobile">
+                        <li><span class="dropdown-item text-muted text-center py-3 text-sm">Loading...</span></li>
+                    </div>
+                </ul>
+            </div>
+
+            <div onclick="toggleDarkMode()" class="theme-toggle-btn text-slate-500">
+                <i class="bi bi-moon-stars dark:hidden text-lg"></i>
+                <i class="bi bi-sun hidden dark:block text-lg"></i>
+            </div>
+            <div id="offlineIndicator"
+                class="hidden animate-pulse text-rose-500 flex items-center gap-1 text-xs font-bold">
+                <i class="bi bi-wifi-off"></i> OFFLINE
+            </div>
+        </div>
+    </header>
+    {% endblock %}
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="flex-1 pb-20 md:pb-6 {% if user.is_authenticated %}md:ml-64{% endif %} min-h-screen transition-all duration-300">
+        <div class="container mx-auto px-4 py-6">
+            <!-- Global Messages -->
+            {% if messages %}
+            <div class="space-y-3 mb-6">
+                {% for message in messages %}
+                <div class="flex items-center p-4 rounded-2xl border 
+                    {% if message.tags == 'success' %}
+                        bg-green-50 text-green-800 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800
+                    {% elif message.tags == 'warning' %}
+                        bg-amber-50 text-amber-800 border-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        bg-red-50 text-red-800 border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800
+                    {% else %}
+                        bg-blue-50 text-blue-800 border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800
+                    {% endif %}
+                    alert-dismissible fade show shadow-sm" role="alert">
+
+                    <div class="flex-shrink-0 mr-3">
+                        {% if message.tags == 'success' %}
+                        <i class="bi bi-check-circle-fill text-xl"></i>
+                        {% elif message.tags == 'warning' %}
+                        <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="bi bi-x-circle-fill text-xl"></i>
+                        {% else %}
+                        <i class="bi bi-info-circle-fill text-xl"></i>
+                        {% endif %}
+                    </div>
+
+                    <div class="font-bold text-sm">
+                        {{ message }}
+                    </div>
+
+                    <button type="button"
+                        class="ml-auto bg-transparent border-0 opacity-50 hover:opacity-100 transition-opacity"
+                        data-bs-dismiss="alert" aria-label="Close">
+                        <i class="bi bi-x-lg text-sm"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {% if user.is_authenticated %}
+    <!-- Bottom Navbar (Mobile Only) -->
+    <nav
+        class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex items-center justify-around z-50 pb-safe fixed-bottom">
+        <a href="{% url 'dashboard' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2 text-xl"></i>
+            <span class="text-[10px] mt-1">Home</span>
+        </a>
+        <a href="{% url 'data_explorer' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'data_explorer' %}active{% endif %}">
+            <i class="bi bi-table text-xl"></i>
+            <span class="text-[10px] mt-1">Leads</span>
+        </a>
+        {% if request.user.is_staff %}
+        <a href="{% url 'sales_dashboard' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'sales_dashboard' %}active{% endif %}">
+            <i class="bi bi-graph-up-arrow text-xl"></i>
+            <span class="text-[10px] mt-1">Stats</span>
+        </a>
+        <a href="{% url 'manage_team' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'manage_team' %}active{% endif %}">
+            <i class="bi bi-people text-xl"></i>
+            <span class="text-[10px] mt-1">Team</span>
+        </a>
+        {% else %}
+        <a href="{% url 'my_profile' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'my_profile' %}active{% endif %}">
+            <i class="bi bi-person-circle text-xl"></i>
+            <span class="text-[10px] mt-1">Profile</span>
+        </a>
+        {% endif %}
+        <a href="{% url 'user_settings' %}"
+            class="nav-bottom-item {% if request.resolver_match.url_name == 'user_settings' %}active{% endif %}">
+            {% if request.user.sales_profile and request.user.sales_profile.profile_picture %}
+            <img src="{{ request.user.sales_profile.profile_picture.url }}" alt="Profile"
+                class="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+            {% else %}
+            <i class="bi bi-gear text-xl"></i>
+            {% endif %}
+            <span class="text-[10px] mt-1">Settings</span>
+        </a>
+    </nav>
+    {% endif %}
+
+    <!-- PWA Registration & Offline Sync -->
+    <script src="{% static 'sales/js/offline_sync.js' %}"></script>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js').then(registration => {
+                    console.log('SW registered:', registration);
+                }).catch(err => {
+                    console.log('SW registration failed:', err);
+                });
+            });
+        }
+
+        // Offline Status Detection
+        function updateOnlineStatus() {
+            const indicator = document.getElementById('offlineIndicator');
+            if (indicator) {
+                if (navigator.onLine) {
+                    indicator.classList.add('hidden');
+                } else {
+                    indicator.classList.remove('hidden');
+                }
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        // Dark Mode Logic (Stable)
+        function applyTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+            // Dispatch custom event for charts or other components
+            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark } }));
+        }
+
+        // ==========================================
+        // Notifications Polling and Rendering Logic
+        // ==========================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        function fetchNotifications() {
+            fetch('/notifications/api/unread-count/')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    const badges = document.querySelectorAll('#notificationBadgeDesktop, #notificationBadgeMobile');
+                    if (data.unread_count > 0) {
+                        badges.forEach(b => {
+                            b.innerText = data.unread_count > 99 ? '99+' : data.unread_count;
+                            b.style.display = 'block';
+                        });
+                    } else {
+                        badges.forEach(b => b.style.display = 'none');
+                    }
+
+                    // Update Lists
+                    const lists = document.querySelectorAll('#notificationListDesktop, #notificationListMobile');
+                    let listHtml = '';
+                    if (data.notifications && data.notifications.length > 0) {
+                        data.notifications.forEach(notif => {
+                            let bgClass = notif.is_read ? '' : 'bg-slate-50 dark:bg-slate-800/50';
+                            let dot = notif.is_read ? '' : '<span class="p-1 bg-brand-primary rounded-full inline-block mr-2" style="margin-top: 5px;"></span>';
+                            listHtml += `
+                            <li>
+                                <a class="dropdown-item py-2 border-b border-slate-100 dark:border-slate-700 ${bgClass}" href="${escapeHtml(notif.url)}" style="white-space: normal;" onclick="markSingleRead(${Number(notif.id)}, event)">
+                                    <div class="d-flex align-items-start">
+                                        ${dot}
+                                        <div style="flex: 1;">
+                                            <p class="mb-0 text-sm font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(notif.title)}</p>
+                                            <p class="mb-1 text-xs text-slate-500 dark:text-slate-400" style="word-break: break-word;">${escapeHtml(notif.message)}</p>
+                                            <p class="mb-0 text-slate-400" style="font-size: 0.65rem;">${escapeHtml(notif.time_ago)}</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                        `;
+                        });
+                    } else {
+                        listHtml = '<li><span class="dropdown-item text-muted text-center py-3 text-sm">No new notifications</span></li>';
+                    }
+
+                    lists.forEach(l => l.innerHTML = listHtml);
+                })
+                .catch(err => console.log("Error fetching notifications:", err));
+        }
+
+        function markSingleRead(notifId, event) {
+            fetch(`/notifications/api/mark-read/${notifId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            // Let the navigation proceed natively
+        }
+
+        function markAllNotificationsRead(event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            fetch('/notifications/api/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(() => fetchNotifications());
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        {% if user.is_authenticated %}
+        document.addEventListener('DOMContentLoaded', () => {
+            // Start Notification Polling
+            fetchNotifications();
+            setInterval(fetchNotifications, 30000); // Poll every 30 seconds
+        });
+        {% endif %}
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

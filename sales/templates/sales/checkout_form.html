@@ -1,0 +1,178 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Product Card -->
+            <div class="card shadow-sm mb-5 border-0 rounded-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-shop text-primary" style="font-size: 2.75rem;"></i>
+                    </div>
+                    <h2 class="card-title fw-bold mb-3">{{ checkout_settings.product_name }}</h2>
+                    <p class="text-muted lead mb-4">{{ checkout_settings.product_description }}</p>
+
+                    <div class="price-tag bg-light d-inline-block px-4 py-2 rounded-pill">
+                        <h1 class="text-primary m-0 fw-bold">
+                            {{ checkout_settings.product_price|floatformat:0 }} <small
+                                class="fs-6 text-muted">{{ checkout_settings.currency }}</small>
+                        </h1>
+                    </div>
+                    <p class="mt-2 text-muted small">شامل جميع الرسوم والضرائب</p>
+                </div>
+            </div>
+
+            <!-- Checkout Form -->
+            <div class="card shadow border-0 rounded-lg">
+                <div class="card-header bg-primary text-white p-4">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-person-check me-2"></i> بيانات الاشتراك</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% url 'initiate_payment' %}" id="checkoutForm" class="needs-validation"
+                        novalidate>
+                        {% csrf_token %}
+
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="lead_id" value="{{ lead.id|default:'' }}">
+                        <input type="hidden" name="sales_agent_id"
+                            value="{% if agent.sales_profile.agent_uuid %}{{ agent.sales_profile.agent_uuid }}{% else %}{{ agent.id|default:'' }}{% endif %}">
+
+                        <div class="row g-4">
+                            <!-- Customer Name -->
+                            <div class="col-md-12">
+                                <label for="customer_name" class="form-label fw-bold">الاسم الكامل / اسم النشاط
+                                    *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i
+                                            class="bi bi-person text-muted"></i></span>
+                                    <input type="text" class="form-control form-control-lg" id="customer_name"
+                                        name="customer_name" value="{{ initial_data.customer_name }}" required
+                                        placeholder="مثال: مطعم البركة">
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="customer_email" class="form-label fw-bold">البريد الإلكتروني *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i
+                                            class="bi bi-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control form-control-lg" id="customer_email"
+                                        name="customer_email" value="{{ initial_data.customer_email }}" required
+                                        placeholder="email@example.com">
+                                </div>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <label for="customer_phone" class="form-label fw-bold">رقم الهاتف *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i
+                                            class="bi bi-telephone text-muted"></i></span>
+                                    <input type="tel" class="form-control form-control-lg" id="customer_phone"
+                                        name="customer_phone" value="{{ initial_data.customer_phone }}"
+                                        placeholder="010xxxxxxxx" required pattern="^01[0-2,5]{1}[0-9]{8}$">
+                                </div>
+                                <div class="form-text">يجب أن يكون رقم مصري صحيح (11 رقم)</div>
+                            </div>
+
+                            <!-- Domain Name -->
+                            <div class="col-md-12">
+                                <label for="domain_name" class="form-label fw-bold">اسم الدومين المطلوب (الموقع)
+                                    *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i
+                                            class="bi bi-globe text-muted"></i></span>
+                                    <input type="text" class="form-control form-control-lg" id="domain_name"
+                                        name="domain_name" placeholder="mylead.com" required>
+                                </div>
+                                <div class="form-text text-primary">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    أكتب اسم الموقع الذي تريد حجزه لنشاطك
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Summary -->
+                        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
+                            <span class="h5 m-0 text-muted">الإجمالي للدفع:</span>
+                            <span class="h3 m-0 text-primary fw-bold">{{ checkout_settings.product_price|floatformat:0 }}
+                                {{ checkout_settings.currency }}</span>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg p-3 fw-bold shadow-sm hover-elevate">
+                                <i class="bi bi-credit-card me-2"></i> متابعة للدفع الآمن
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-lock-fill me-1"></i> مدفوعات مؤمنة بواسطة Paymob
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-elevate {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .hover-elevate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+    }
+
+    .input-group-text {
+        border-right: 0;
+    }
+
+    .input-group .form-control {
+        border-left: 0;
+    }
+
+    .input-group .form-control:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+        /* Keep default border color on focus if desired, or remove to use BS default */
+        border-left: 0;
+    }
+</style>
+
+<script>
+    // Form validation
+    document.getElementById('checkoutForm').addEventListener('submit', function (e) {
+        const phone = document.getElementById('customer_phone');
+        const domain = document.getElementById('domain_name');
+
+        // Validate Egyptian phone number
+        const phoneRegex = /^01[0-2,5]{1}[0-9]{8}$/;
+        if (!phoneRegex.test(phone.value)) {
+            e.preventDefault();
+            alert('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 010، 011، 012، أو 015 ويتكون من 11 رقم.');
+            phone.focus();
+            return false;
+        }
+
+        // Simple Domain Validation
+        if (domain.value.length < 3) {
+            e.preventDefault();
+            alert('الرجاء إدخال اسم دومين صحيح');
+            domain.focus();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

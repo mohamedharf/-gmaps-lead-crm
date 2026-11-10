@@ -1,0 +1,220 @@
+/* Data Explorer - Custom Styles */
+
+/* Mobile responsiveness and general table adjustments */
+@media (max-width: 991.98px) {
+    .table-responsive {
+        font-size: 14px !important;
+    }
+
+    /* Dropdown dividers */
+    .dropdown-divider {
+        margin: 8px 0 !important;
+    }
+
+    /* Fix for nested forms in dropdowns */
+    .dropdown-menu form {
+        margin: 0 !important;
+    }
+
+    .dropdown-menu button.dropdown-item {
+        width: 100% !important;
+        text-align: left !important;
+        background: none !important;
+        border: none !important;
+    }
+
+    /* Prevent body scrolling when dropdown is open */
+    body.dropdown-open {
+        overflow: hidden !important;
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    /* Header adjustments */
+    .header-section {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 15px !important;
+    }
+
+    .header-section h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .header-section .badge {
+        align-self: flex-start;
+        font-size: 0.85rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Action Toolbar */
+    .action-toolbar .row > div {
+        margin-bottom: 15px;
+    }
+
+    .action-toolbar .btn-group {
+        flex-wrap: wrap;
+    }
+
+    .action-toolbar .btn-group .btn {
+        flex: 1;
+        min-width: 120px;
+        margin-bottom: 5px;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+        gap: 8px !important;
+    }
+
+    .action-buttons .dropdown .btn {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+    }
+
+    /* Bulk Actions */
+    #bulkActions .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    #bulkActions .vr {
+        display: none;
+    }
+
+    #bulkActions select {
+        max-width: 100% !important;
+    }
+
+    /* Table Improvements for Mobile */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -10px;
+        padding: 0 10px;
+    }
+
+    table {
+        min-width: 800px;
+        font-size: 12px;
+    }
+
+    .table th {
+        font-size: 0.75rem;
+        padding: 8px 5px;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 8px 5px;
+        font-size: 12px;
+    }
+
+    /* Column-specific adjustments (approximate based on order) */
+    .table td:nth-child(2) { min-width: 120px; max-width: 120px; }
+    .table td:nth-child(3) { min-width: 100px; max-width: 100px; }
+    .table td:nth-child(7), .table td:nth-child(8) { min-width: 100px; }
+    .table td:nth-child(10) { min-width: 120px; }
+
+    /* Compact buttons in table */
+    .table .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .table .d-flex.gap-1 {
+        gap: 3px !important;
+        flex-wrap: wrap;
+    }
+
+    /* Message cells */
+    .d-flex.flex-column.gap-1 {
+        gap: 2px !important;
+    }
+
+    .d-flex.flex-column.gap-1 .btn-sm {
+        padding: 0.1rem 0.2rem;
+        font-size: 0.7rem;
+    }
+
+    /* Status select */
+    .status-select {
+        min-width: 120px !important;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Badges */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Avatar */
+    .avatar-sm {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 0.65rem !important;
+    }
+
+    /* Modal adjustments */
+    .modal-dialog.modal-lg {
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+
+    .modal-body textarea {
+        font-size: 14px;
+    }
+}
+
+/* Custom classes for table states */
+.table-dark {
+    background-color: #212529;
+}
+
+.avatar-sm {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.table-wrapper {
+    position: relative;
+}
+
+.status-select {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-select:hover {
+    filter: brightness(0.95);
+}
+
+.dropdown-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 1050;
+    display: none;
+}
+
+.dropdown-backdrop.show {
+    display: block;
+}

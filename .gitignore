@@ -1,0 +1,48 @@
+# Python / Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Databases & Local Media Uploads
+db.sqlite3
+db.sqlite3-journal
+media/
+profile_pics/
+site_logos/
+
+# Exports, Archives & Debug Artifacts
+*.zip
+*.xlsx
+*.csv
+debug_*.png
+recovered_*.html
+project_full_index.json
+old_version/
+master_plan.md
+PAYMENT_REDIRECT_FIX.md
+complete_payments.py
+generate_excel.py
+inspect_all.py
+large_seed.py
+populate_uuids.py
+reset_test_lead.py
+run_scheduler_loop.py
+test_new_features.py
+test_phonenumbers.py
+verify_db.py
+verify_phase3.py
+verify_search.py
+verify_selectors.py
+
+# Logs & OS Files
+*.log
+.DS_Store
+Thumbs.db

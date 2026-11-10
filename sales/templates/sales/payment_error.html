@@ -1,0 +1,38 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Payment Error{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow border-0 rounded-lg">
+                <div class="card-header bg-danger text-white text-center py-3">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i> خطأ في النظام</h4>
+                </div>
+                <div class="card-body text-center p-5">
+                    <p class="lead mb-4">حدث خطأ غير متوقع أثناء محاولة بدء عملية الدفع.</p>
+
+                    {% if error %}
+                    <div class="alert alert-secondary text-start small overflow-auto" style="max-height: 150px;">
+                        <strong>Technical Details:</strong><br>
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <p class="text-muted mt-3">يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.</p>
+
+                    <div class="mt-4">
+                        <a href="javascript:history.back()" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-arrow-right me-2"></i> عودة
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                            الرئيسية
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

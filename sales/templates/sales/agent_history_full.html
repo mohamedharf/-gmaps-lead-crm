@@ -1,0 +1,76 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Full History: {{ agent.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            {% if request.user.is_staff %}
+            <li class="breadcrumb-item"><a href="{% url 'manage_team' %}">Sales Team</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'sales_agent_profile' agent.id %}">{{ agent.username }}</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'my_profile' %}">My Profile</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">Full History</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>History Log: {{ agent.username }}</h2>
+        <div class="text-muted small">Total: {{ history_logs.count }} records</div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 15%;">Date & Time</th>
+                            <th style="width: 15%;">Action Type</th>
+                            <th style="width: 50%;">Details</th>
+                            <th style="width: 20%;">Performed By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in history_logs %}
+                        <tr>
+                            <td class="small">{{ log.created_at|date:"M d, Y - H:i" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.action_type == 'CONFIG_UPDATE' %}bg-info
+                                    {% elif log.action_type == 'PAYOUT_RECORDED' %}bg-success
+                                    {% elif log.action_type == 'LEAD_TRANSFER' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ log.get_action_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ log.details }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle-sm bg-light text-primary border me-2"
+                                        style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold;">
+                                        {{ log.action_by.username|first|upper|default:"S" }}
+                                    </div>
+                                    <span class="small">{{ log.action_by.username|default:"System" }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
+                                <h5>No history records found</h5>
+                                <p>All administrative actions taken on this agent will appear here.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

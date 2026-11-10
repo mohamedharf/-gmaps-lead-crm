@@ -1,0 +1,56 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Payment Failed{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="text-danger fw-bold mb-3">فشلت عملية الدفع</h2>
+                    <p class="lead text-muted mb-4">نأسف، لم نتمكن من إتمام عملية الدفع الخاصة بك.</p>
+
+                    <div class="alert alert-warning text-dark border-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        قد يكون السبب رفض البطاقة، عدم كفاية الرصيد، أو مشكلة تقنية مؤقتة.
+                    </div>
+
+                    {% if order %}
+                    <div class="alert alert-light border mt-4">
+                        <div class="row mb-2">
+                            <div class="col-6 text-end text-muted">رقم الطلب:</div>
+                            <div class="col-6 text-start fw-bold">#{{ order.id }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 text-end text-muted">المبلغ المحاولة:</div>
+                            <div class="col-6 text-start fw-bold">{{ order.price }} {{ order.currency }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 mt-5">
+                        {% if order and order.lead %}
+                        <a href="{% url 'checkout_page' order.lead.id %}"
+                            class="btn btn-warning btn-lg text-white font-weight-bold">
+                            <i class="bi bi-arrow-repeat me-2"></i> إعادة المحاولة
+                        </a>
+                        {% elif order and order.sales_agent and order.sales_agent.sales_profile %}
+                        <a href="{% url 'public_checkout' order.sales_agent.sales_profile.agent_uuid %}"
+                            class="btn btn-warning btn-lg text-white font-weight-bold">
+                            <i class="bi bi-arrow-repeat me-2"></i> إعادة المحاولة
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            إلغاء والعودة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

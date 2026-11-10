@@ -1,0 +1,125 @@
+{% extends 'sales/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-circle me-2"></i>My Profile Settings</h5>
+                    <span class="badge bg-light text-primary">ID: {{ request.user.id }}</span>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="row mb-4">
+                            <div class="col-md-4 text-center">
+                                <div class="mb-3 position-relative d-inline-block">
+                                    {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}" alt="Profile"
+                                        class="rounded-circle border border-3 border-light shadow"
+                                        style="width: 150px; height: 150px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-light border border-3 border-light shadow d-flex align-items-center justify-content-center"
+                                        style="width: 150px; height: 150px;">
+                                        <i class="bi bi-person text-secondary display-1"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="position-absolute bottom-0 end-0">
+                                        <label for="id_profile_picture"
+                                            class="btn btn-sm btn-primary rounded-circle shadow">
+                                            <i class="bi bi-camera"></i>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="small text-muted mt-2">Recommended: 200x200 px</div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">First Name</label>
+                                        {{ settings_form.first_name }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Last Name</label>
+                                        {{ settings_form.last_name }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Email Address</label>
+                                    {{ settings_form.email }}
+                                    <div class="form-text">System notifications will be sent here.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Phone Number</label>
+                                    {{ settings_form.phone_number }}
+                                    <div class="form-text">Your contact number for WhatsApp and calls.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Change Profile Picture</label>
+                                    {{ settings_form.profile_picture }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success fw-bold">
+                                <i class="bi bi-check2-circle me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0"><i class="bi bi-key me-2"></i>Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Update Password</h6>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+                        {{ password_form|crispy }}
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <div class="row align-items-center text-center text-md-start">
+                        <div class="col-md-6">
+                            <h6 class="mb-1 fw-bold text-muted">Account Username</h6>
+                            <p class="mb-0 fs-5">@{{ request.user.username }}</p>
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0 d-flex justify-content-md-end">
+                            <div class="px-3 border-start">
+                                <small class="text-muted d-block">Assigned Leads</small>
+                                <span class="fw-bold fs-4">{{ assigned_count }}</span>
+                            </div>
+                            <div class="px-3 border-start">
+                                <small class="text-muted d-block">Member Since</small>
+                                <span class="fw-bold fs-6">{{ request.user.date_joined|date:"M Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-link text-decoration-none text-muted">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

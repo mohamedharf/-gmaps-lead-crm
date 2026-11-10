@@ -1,0 +1,418 @@
+{% extends "sales/base.html" %}
+
+{% block extra_css %}
+<style>
+    tr[style*="cursor: pointer"]:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Sales Team Management</h2>
+            {% if query or selected_manager %}
+            <span class="badge bg-soft-primary text-primary border border-primary-subtle px-3 py-2 mt-2">
+                <i class="bi bi-info-circle me-1"></i> Found {{ page_obj.paginator.count }} matching members
+            </span>
+            {% endif %}
+        </div>
+        {% if request.user.is_staff %}
+        <div>
+            <a href="{% url 'add_admin' %}" class="btn btn-outline-danger me-2"><i class="bi bi-shield-lock me-1"></i>
+                Add New Admin</a>
+            <a href="{% url 'add_sales_agent' %}" class="btn btn-success"><i class="bi bi-person-plus me-1"></i> Add New
+                Agent</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Team Statistics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <!-- Members Stat -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 text-xl">
+                <i class="bi bi-people"></i>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">Total Team Members</p>
+            <h3 class="text-3xl font-bold mt-1 text-slate-900">{{ team_stats.total_members }}</h3>
+            <p class="text-xs text-slate-400 mt-2">Active sales staff</p>
+        </div>
+
+        <!-- Earned Stat -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div
+                class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 text-xl">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">Total Earned</p>
+            <h3 class="text-3xl font-bold mt-1 text-slate-900">{{ team_stats.total_earned|floatformat:0 }} <span
+                    class="text-sm font-normal text-slate-400">EGP</span></h3>
+            <p class="text-xs text-slate-400 mt-2">All completed commissions</p>
+        </div>
+
+        <!-- Paid Stat -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div
+                class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 text-xl">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">Total Paid</p>
+            <h3 class="text-3xl font-bold mt-1 text-slate-900">{{ team_stats.total_paid|floatformat:0 }} <span
+                    class="text-sm font-normal text-slate-400">EGP</span></h3>
+            <p class="text-xs text-slate-400 mt-2">Transferred to agents</p>
+        </div>
+
+        <!-- Balance Stat -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4 text-xl">
+                <i class="bi bi-piggy-bank"></i>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">Remaining Balance</p>
+            <h3 class="text-3xl font-bold mt-1 text-slate-900">{{ team_stats.total_balance|floatformat:0 }} <span
+                    class="text-sm font-normal text-slate-400">EGP</span></h3>
+            <p class="text-xs text-slate-400 mt-2">Outstanding dues</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-muted small">Search Team Members</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control"
+                            placeholder="Search by name, username or email..." value="{{ query|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">Filter by Manager</label>
+                    <select name="manager_id" class="form-select">
+                        <option value="">-- All Managers --</option>
+                        {% for manager in all_managers %}
+                        {% if manager.sales_profile.is_team_lead %}
+                        <option value="{{ manager.sales_profile.id }}"
+                            {% if selected_manager == manager.sales_profile.id|stringformat:"i" %}selected{% endif %}>
+                            {{ manager.username }} ({{ manager.get_full_name }})
+                        </option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">
+                        <i class="bi bi-funnel"></i> Apply Filter
+                    </button>
+                    <a href="{% url 'manage_team' %}" class="btn btn-light border w-100 text-muted fw-bold">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if request.user.is_staff %}
+    <!-- Bulk Actions Toolbar (Hidden by default) -->
+    <div id="bulkActionsToolbar" class="card shadow-sm mb-3 d-none border-primary">
+        <div class="card-body py-2 px-3 bg-light d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold text-primary"><i class="bi bi-check2-square me-1"></i> <span
+                        id="bulkAssignCount">0</span> Agent(s) Selected</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <label class="me-2 fw-bold text-muted small">Assign Manager:</label>
+                <select class="form-select form-select-sm me-2" id="inlineManagerSelect" style="width: 200px;">
+                    <option value="">-- No Manager (Unassign) --</option>
+                    {% for manager in all_managers %}
+                    {% if not manager.is_superuser %}
+                    <option value="{{ manager.id }}">{{ manager.username }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <button class="btn btn-success btn-sm fw-bold" onclick="confirmInlineBulkAssign()">
+                    <i class="bi bi-save"></i> Save Set Manager
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            {% if request.user.is_staff %}
+                            <th width="40"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAllAgents()">
+                            </th>
+                            {% endif %}
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Active</th>
+                            <th>Manager</th>
+                            <th>Assigned Leads</th>
+                            <th>Total Earned</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agent in agents %}
+                        <tr {% if agent.id != request.user.id or request.user.is_staff %}style="cursor: pointer;"
+                            onclick="if(event.target.tagName !== 'BUTTON' && event.target.tagName !== 'I' && event.target.tagName !== 'A' && event.target.type !== 'checkbox') { window.location='{% url 'sales_agent_profile' agent.id %}'; }"
+                            {% else %}class="bg-light opacity-75" {% endif %}>
+                            {% if request.user.is_staff %}
+                            <td onclick="event.stopPropagation();">
+                                <input type="checkbox" class="agent-checkbox" value="{{ agent.id }}"
+                                    onchange="updateBulkAssignBtn()">
+                            </td>
+                            {% endif %}
+                            <td>
+                                <div>
+                                    <strong
+                                        class="fs-6">{% if agent.get_full_name %}{{ agent.get_full_name }}{% else %}{{ agent.username }}{% endif %}</strong>
+                                    {% if agent.id == request.user.id %}
+                                    <span class="badge bg-soft-secondary text-secondary ms-1 small">You</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ agent.email }} | @{{ agent.username }}</small>
+                            </td>
+                            <td>
+                                {% if agent.sales_profile.is_team_lead %}
+                                <span class="badge bg-soft-primary text-primary border border-primary-subtle px-2 py-1">
+                                    <i class="bi bi-person-workspace me-1"></i> Team Lead
+                                </span>
+                                {% else %}
+                                <span
+                                    class="badge bg-soft-secondary text-secondary border border-secondary-subtle px-2 py-1">
+                                    <i class="bi bi-person me-1"></i> Sales Agent
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if agent.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if agent.sales_profile.manager %}
+                                <span class="badge bg-secondary"><i class="bi bi-person-badge"></i>
+                                    {{ agent.sales_profile.manager.user.username }}</span>
+                                {% else %}
+                                <span class="text-muted small">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark">{{ agent.assigned_count }} leads</span>
+                            </td>
+                            <td><span class="text-success fw-bold">{{ agent.sales_profile.total_earned }}</span></td>
+                            <td><span class="text-primary fw-bold">{{ agent.sales_profile.total_paid }}</span></td>
+                            <td>
+                                <span
+                                    class="badge {% if agent.sales_profile.current_balance > 0 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                                    {{ agent.sales_profile.current_balance }}
+                                </span>
+                            </td>
+                            <td onclick="event.stopPropagation();">
+                                <a href="{% url 'sales_agent_profile' agent.id %}" class="btn btn-sm btn-primary"
+                                    title="View Profile">
+                                    <i class="bi bi-person-circle"></i>
+                                </a>
+
+                                {% if request.user.is_staff %}
+                                <button type="button" class="btn btn-sm btn-success payout-btn" data-id="{{ agent.id }}"
+                                    data-name="{{ agent.username }}"
+                                    data-balance="{{ agent.sales_profile.current_balance }}" title="Record Payout">
+                                    <i class="bi bi-cash-stack"></i> Pay
+                                </button>
+                                <a href="{% url 'sales_agent_profile' agent.id %}"
+                                    class="btn btn-sm btn-outline-secondary" title="Edit Agent">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No sales agents found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4 mb-5" aria-label="Team pagination">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link shadow-sm"
+                    href="?page=1{% if query %}&q={{ query }}{% endif %}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}"
+                    aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link shadow-sm"
+                    href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}"
+                    aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link shadow-sm">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link shadow-sm"
+                    href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link shadow-sm"
+                    href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}"
+                    aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link shadow-sm"
+                    href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}"
+                    aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="text-center text-muted small mt-2">
+            Showing Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }}
+            Total Members)
+        </div>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Payout Modal -->
+<div class="modal fade" id="payoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'record_payout' %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-cash-stack me-2"></i>Record Manual Payout</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="agent_id" id="payoutAgentId">
+                <p>Record a payment made to <strong><span id="payoutAgentName"></span></strong>.</p>
+                <div class="alert alert-warning">
+                    Current Balance Due: <strong><span id="payoutAgentBalance"></span> EGP</strong>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Amount Paid (EGP)</label>
+                    <input type="number" step="0.01" min="0.01" class="form-control" name="amount"
+                        id="payoutAmountInput" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notes / Reference (Optional)</label>
+                    <textarea class="form-control" name="notes" rows="2"
+                        placeholder="e.g. Bank Transfer ID, Handed Cash..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success">Confirm Payout</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const payoutButtons = document.querySelectorAll('.payout-btn');
+        const payoutModal = new bootstrap.Modal(document.getElementById('payoutModal'));
+
+        payoutButtons.forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation(); // prevent row click
+
+                document.getElementById('payoutAgentId').value = this.dataset.id;
+                document.getElementById('payoutAgentName').textContent = this.dataset.name;
+                document.getElementById('payoutAgentBalance').textContent = parseFloat(this.dataset.balance).toFixed(2);
+                document.getElementById('payoutAmountInput').value = parseFloat(this.dataset.balance).toFixed(2);
+
+                payoutModal.show();
+            });
+        });
+    });
+
+    function toggleAllAgents() {
+        const selectAll = document.getElementById('selectAllCheckbox');
+        const checkboxes = document.querySelectorAll('.agent-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateBulkAssignBtn();
+    }
+
+    function updateBulkAssignBtn() {
+        const checkedBoxes = document.querySelectorAll('.agent-checkbox:checked');
+        const toolbar = document.getElementById('bulkActionsToolbar');
+        if (checkedBoxes.length > 0) {
+            toolbar.classList.remove('d-none');
+            document.getElementById('bulkAssignCount').textContent = checkedBoxes.length;
+        } else {
+            toolbar.classList.add('d-none');
+        }
+    }
+
+    function confirmInlineBulkAssign() {
+        const managerId = document.getElementById('inlineManagerSelect').value;
+        const checkedBoxes = document.querySelectorAll('.agent-checkbox:checked');
+        const agentIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+        if (agentIds.length === 0) return;
+
+        fetch('{% url "bulk_assign_manager" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                agent_ids: agentIds,
+                manager_id: managerId ? parseInt(managerId) : null
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to assign manager');
+            });
+    }
+</script>
+
+{% endblock %}

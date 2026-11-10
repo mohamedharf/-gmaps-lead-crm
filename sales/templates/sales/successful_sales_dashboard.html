@@ -1,0 +1,257 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Successful Sales Dashboard</h1>
+            <p class="text-muted mb-0">Track revenue, commissions, and completed orders.</p>
+        </div>
+        <a href="{% url 'sales_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-repeat me-1"></i> Reset Filters
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <!-- Total Sales Count -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white dark:bg-slate-800">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 text-xl">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                        <span class="text-xs font-bold text-muted text-uppercase tracking-wider">Total Sales</span>
+                    </div>
+                    <div class="h3 mb-0 font-bold text-primary">{{ total_sales }}</div>
+                    <p class="text-xs text-muted mt-2 mb-0">Total orders processed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Revenue -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white dark:bg-slate-800">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 text-xl">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <span class="text-xs font-bold text-muted text-uppercase tracking-wider">Total Revenue</span>
+                    </div>
+                    <div class="h3 mb-0 font-bold text-success">{{ total_revenue|floatformat:2 }} <span
+                            class="text-sm font-normal text-muted">EGP</span></div>
+                    <p class="text-xs text-muted mt-2 mb-0">Gross sales amount</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Commissions -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white dark:bg-slate-800">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 bg-info bg-opacity-10 text-info rounded-3 text-xl">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="text-xs font-bold text-muted text-uppercase tracking-wider">Commissions</span>
+                    </div>
+                    <div class="h3 mb-0 font-bold text-info">{{ total_commissions|floatformat:2 }} <span
+                            class="text-sm font-normal text-muted">EGP</span></div>
+                    <p class="text-xs text-muted mt-2 mb-0">Paid to agents</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Revenue -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white dark:bg-slate-800">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3 text-xl">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <span class="text-xs font-bold text-muted text-uppercase tracking-wider">Net Revenue</span>
+                    </div>
+                    <div class="h3 mb-0 font-bold text-warning">{{ net_revenue|floatformat:2 }} <span
+                            class="text-sm font-normal text-muted">EGP</span></div>
+                    <p class="text-xs text-muted mt-2 mb-0">Earnings after commission</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Data Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Completed Orders</h6>
+
+            <!-- Filter Form -->
+            <form method="GET" class="d-flex align-items-center gap-2">
+                <!-- Sales Agent Filter -->
+                <select name="agent" class="form-select form-select-sm" style="width: 200px;"
+                    onchange="this.form.submit()">
+                    <option value="">All Sales Agents</option>
+                    {% for agent in sales_agents %}
+                    <option value="{{ agent.id }}" {% if selected_agent == agent.id %}selected{% endif %}>
+                        {{ agent.get_full_name|default:agent.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Date Range Filter -->
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">From</span>
+                    <input type="date" name="date_from" class="form-control"
+                        value="{{ selected_date_from|default:'' }}">
+                    <span class="input-group-text">To</span>
+                    <input type="date" name="date_to" class="form-control" value="{{ selected_date_to|default:'' }}">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i></button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Domain</th>
+                            <th>Sales Agent</th>
+                            <th>Price</th>
+                            <th>Commission</th>
+                            <th>Net Revenue</th>
+                            <th>Paid At</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>
+                                <div class="fw-bold">{{ order.customer_name }}</div>
+                                <small class="text-muted">{{ order.customer_email }}</small>
+                            </td>
+                            <td>
+                                {% if order.domain_name %}
+                                <a href="http://{{ order.domain_name }}" target="_blank" class="text-decoration-none">
+                                    {{ order.domain_name }} <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.sales_agent %}
+                                <span class="badge bg-info text-white">
+                                    {{ order.sales_agent.get_full_name|default:order.sales_agent.username }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ order.commission_rate }}%</small>
+                                {% else %}
+                                <span class="badge bg-secondary">Direct Sale</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-success fw-bold">{{ order.price|floatformat:0 }} {{ order.currency }}</td>
+                            <td class="text-danger">-{{ order.commission_amount|floatformat:0 }} {{ order.currency }}
+                            </td>
+                            <td class="text-primary fw-bold">{{ order.net_revenue|floatformat:0 }} {{ order.currency }}
+                            </td>
+                            <td>{{ order.paid_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i> Completed
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'payment_success' order.id %}" class="btn btn-sm btn-info"
+                                    title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3 text-gray-300"></i>
+                                <p>No completed sales found matching your criteria.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">Total:</td>
+                            <td class="text-success">{{ total_revenue|floatformat:0 }} EGP</td>
+                            <td class="text-danger">-{{ total_commissions|floatformat:0 }} EGP</td>
+                            <td class="text-primary">{{ net_revenue|floatformat:0 }} EGP</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if orders.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if orders.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page=1{% if selected_agent %}&agent={{ selected_agent }}{% endif %}{% if selected_date_from %}&date_from={{ selected_date_from }}{% endif %}{% if selected_date_to %}&date_to={{ selected_date_to }}{% endif %}"
+                            aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ orders.previous_page_number }}{% if selected_agent %}&agent={{ selected_agent }}{% endif %}{% if selected_date_from %}&date_from={{ selected_date_from }}{% endif %}{% if selected_date_to %}&date_to={{ selected_date_to }}{% endif %}"
+                            aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in orders.paginator.page_range %}
+                    {% if orders.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+                    <li class="page-item"><a class="page-link"
+                            href="?page={{ num }}{% if selected_agent %}&agent={{ selected_agent }}{% endif %}{% if selected_date_from %}&date_from={{ selected_date_from }}{% endif %}{% if selected_date_to %}&date_to={{ selected_date_to }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if orders.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ orders.next_page_number }}{% if selected_agent %}&agent={{ selected_agent }}{% endif %}{% if selected_date_from %}&date_from={{ selected_date_from }}{% endif %}{% if selected_date_to %}&date_to={{ selected_date_to }}{% endif %}"
+                            aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ orders.paginator.num_pages }}{% if selected_agent %}&agent={{ selected_agent }}{% endif %}{% if selected_date_from %}&date_from={{ selected_date_from }}{% endif %}{% if selected_date_to %}&date_to={{ selected_date_to }}{% endif %}"
+                            aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            <div class="text-center text-muted small mt-2">
+                Showing {{ orders.start_index }}-{{ orders.end_index }} of {{ orders.paginator.count }} orders
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

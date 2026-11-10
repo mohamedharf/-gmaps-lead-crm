@@ -1,0 +1,931 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}{{ agent.username }} - Sales Profile{% endblock %}
+
+{% block extra_css %} <style>
+    .agent-header {
+        background: linear-gradient(135deg, var(--brand-primary, #4361ee) 0%, var(--brand-secondary, #3a0ca3) 100%);
+        color: white;
+        padding: 3rem 2.5rem;
+        border-radius: 28px;
+        margin-bottom: 2rem;
+        box-shadow: 0 15px 35px -5px rgba(67, 97, 238, 0.25);
+        position: relative;
+        overflow: hidden;
+        border: none;
+    }
+
+    .agent-header::before {
+        content: '';
+        position: absolute;
+        top: -20%;
+        left: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .premium-card {
+        border-radius: 24px !important;
+        border: none !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+        transition: all 0.3s ease;
+    }
+
+    .premium-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .dark .premium-card {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .card-icon-circle {
+        width: 52px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+        opacity: 0.8;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .progress-premium {
+        height: 10px !important;
+        border-radius: 10px !important;
+        background-color: rgba(0, 0, 0, 0.05) !important;
+        overflow: hidden;
+    }
+
+    .dark .progress-premium {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .progress-premium .progress-bar {
+        border-radius: 10px !important;
+    }
+
+    .section-header-premium {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: var(--brand-text);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .section-header-premium::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 40px;
+        height: 4px;
+        background: var(--brand-primary);
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!--Header -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'manage_team' %}">Sales Team</a></li>
+            <li class="breadcrumb-item active">{{ agent.username }}</li>
+        </ol>
+    </nav>
+
+    <!-- Agent Header Card -->
+    <div class="agent-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    {% if agent.sales_profile.profile_picture %}
+                    <img class="avatar-circle bg-white text-primary me-4 shadow-sm"
+                        src="{{ agent.sales_profile.profile_picture.url }}" alt="Profile"
+                        style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">
+                    {% else %}
+                    <div class="avatar-circle bg-white text-primary me-4 shadow-sm"
+                        style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold;">
+                        {% if agent.first_name %}{{ agent.first_name|first|upper }}{% else %}{{ agent.username|first|upper }}{% endif %}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="mb-1 fw-black text-brand-text">
+                            {% if agent.get_full_name %}{{ agent.get_full_name }}{% else %}{{ agent.username }}{% endif %}
+                        </h2>
+                        <p class="mb-1 opacity-75 text-brand-text"><strong><i class="bi bi-envelope me-1"></i>
+                                Email:</strong> {{ agent.email|default:"No email" }}</p>
+                        <p class="mb-2 opacity-75 text-brand-text"><strong><i class="bi bi-telephone me-1"></i>
+                                Phone:</strong> {{ sales_profile.phone_number|default:"No phone" }}</p>
+                        <span class="status-badge-lg
+                            {% if sales_profile.status == 'online' %}bg-success
+                            {% elif sales_profile.status == 'away' %}bg-warning text-dark
+                            {% else %}bg-secondary{% endif %}">
+                            {{ sales_profile.status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <div class="mb-2 opacity-75">
+                    <i class="bi bi-calendar-check me-2"></i>
+                    <small class="fw-bold">Joined: {{ sales_profile.joined_date|date:"M d, Y" }}</small>
+                </div>
+                <div>
+                    <i class="bi bi-clock me-2"></i>
+                    <small>
+                        {% if sales_profile.last_active_at %}
+                        <strong class="text-white">Last active:</strong>
+                        {{ sales_profile.last_active_at|date:"Y-m-d H:i" }}
+                        <br>
+                        <span class="opacity-50">({{ sales_profile.last_active_at|timesince }} ago)</span>
+                        {% else %}
+                        Never logged in
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card premium-card bg-primary text-white overflow-hidden">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="card-icon-circle">
+                        <i class="bi bi-briefcase fs-3"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label mb-0">Total Leads</p>
+                        <h2 class="stat-value mb-0">{{ total_leads }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card premium-card bg-success text-white overflow-hidden">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="card-icon-circle">
+                        <i class="bi bi-trophy fs-3"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label mb-0">Deals Closed</p>
+                        <h2 class="stat-value mb-0">{{ deals_count }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card premium-card bg-warning text-white overflow-hidden">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="card-icon-circle">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label mb-0">Total Earned</p>
+                        <h2 class="stat-value mb-0">{{ sales_profile.total_earned }}<small
+                                class="fs-6 opacity-75 ms-1">EGP</small></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card premium-card bg-info text-white overflow-hidden">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="card-icon-circle">
+                        <i class="bi bi-graph-up fs-3"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label mb-0">Conv. Rate</p>
+                        <h2 class="stat-value mb-0">{{ conversion_rate }}<small class="fs-6 opacity-75 ms-1">%</small>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manager Team Metrics -->
+    {% if sales_profile.subordinates.exists %}
+    <div class="card premium-card mb-5">
+        <div
+            class="card-header bg-slate-50 dark:bg-slate-900/50 border-0 p-4 d-flex justify-content-between align-items-center">
+            <h5 class="section-header-premium mb-0"><i class="bi bi-diagram-3 me-2 text-primary"></i>My Team's
+                Performance</h5>
+            <span class="badge bg-primary rounded-pill"><i
+                    class="bi bi-people me-1"></i>{{ sales_profile.subordinates.count }} Agents</span>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <h6 class="text-muted">Total Team Commission Rate</h6>
+                    <p class="fs-4">{{ sales_profile.team_commission_rate }}%</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Total Direct Commissions</h6>
+                    <p class="fs-4 text-success">{{ sales_profile.total_commission }} EGP</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Total Earned from Team</h6>
+                    <p class="fs-4 text-primary">{{ sales_profile.total_team_commission }} EGP</p>
+                </div>
+            </div>
+
+            <hr>
+            <h6 class="mb-4 text-brand-text fw-bold uppercase small tracking-wider opacity-75"><i
+                    class="bi bi-person-lines-fill me-2 text-primary"></i>Team Members</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead class="bg-slate-50 dark:bg-slate-900/50">
+                        <tr>
+                            <th
+                                class="px-3 py-2 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Agent</th>
+                            <th
+                                class="px-3 py-2 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Status</th>
+                            <th
+                                class="px-3 py-2 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Assigned Leads</th>
+                            <th
+                                class="px-3 py-2 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Total Earned</th>
+                            <th
+                                class="px-3 py-2 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subordinates %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-brand-text">{{ sub.user.username }}</div>
+                                <small class="text-muted">{{ sub.user.email }}</small>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge {% if sub.status == 'online' %}bg-success{% elif sub.status == 'away' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ sub.status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark">{{ sub.assigned_count }} Leads</span>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">{{ sub.total_earned }}</span>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge {% if sub.current_balance > 0 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ sub.current_balance }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Performance Chart & Status Breakdown -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-8">
+            <div class="card premium-card p-4">
+                <div class="mb-4">
+                    <h5 class="section-header-premium"><i class="bi bi-graph-up me-2 text-primary"></i>Performance (Last
+                        30 Days)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card premium-card p-4">
+                <div class="mb-4">
+                    <h5 class="section-header-premium"><i class="bi bi-pie-chart me-2 text-primary"></i>Status Breakdown
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold small opacity-75 text-brand-text">Not Contacted</span>
+                            <span class="badge bg-secondary rounded-pill">{{ status_dict.NOT_CONTACTED }}</span>
+                        </div>
+                        <div class="progress progress-premium">
+                            <div class="progress-bar bg-secondary"
+                                style="width: {% widthratio status_dict.NOT_CONTACTED total_leads 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold small opacity-75 text-brand-text">Sent/In Progress</span>
+                            <span
+                                class="badge bg-primary rounded-pill">{{ status_dict.SENT|add:status_dict.DELIVERED|add:status_dict.READ }}</span>
+                        </div>
+                        <div class="progress progress-premium">
+                            <div class="progress-bar bg-primary"
+                                style="width: {% widthratio status_dict.SENT|add:status_dict.DELIVERED|add:status_dict.READ total_leads 100 %}%">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold small opacity-75 text-brand-text">Replied</span>
+                            <span class="badge bg-info rounded-pill text-dark">{{ status_dict.REPLIED }}</span>
+                        </div>
+                        <div class="progress progress-premium">
+                            <div class="progress-bar bg-info"
+                                style="width: {% widthratio status_dict.REPLIED total_leads 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold small opacity-75 text-brand-text">Deals</span>
+                            <span class="badge bg-success rounded-pill">{{ status_dict.DEAL }}</span>
+                        </div>
+                        <div class="progress progress-premium">
+                            <div class="progress-bar bg-success"
+                                style="width: {% widthratio status_dict.DEAL total_leads 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold small opacity-75 text-brand-text">Not Interested</span>
+                            <span class="badge bg-danger rounded-pill">{{ status_dict.NOT_INTERESTED }}</span>
+                        </div>
+                        <div class="progress progress-premium">
+                            <div class="progress-bar bg-danger"
+                                style="width: {% widthratio status_dict.NOT_INTERESTED total_leads 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Configuration (Admin/Manager Role Checks) -->
+            {% if request.user.is_staff %}
+            <div class="card premium-card mt-4 p-4">
+                <div class="mb-4">
+                    <h5 class="section-header-premium"><i class="bi bi-gear-fill me-2 text-primary"></i>Agent
+                        Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'update_agent_config' agent.id %}" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Commission Rate (%)</label>
+                            <div class="input-group">
+                                <input type="number" name="commission_rate" step="0.01" class="form-control"
+                                    value="{{ sales_profile.commission_rate }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text small opacity-75">Standard rate for their own sales.</div>
+                        </div>
+
+                        <!-- Assign Manager -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Assign Manager</label>
+                            <select name="manager_user" class="form-select">
+                                <option value="">-- No Manager --</option>
+                                {% for m in managers %}
+                                <option value="{{ m.id }}"
+                                    {% if sales_profile.manager.user.id == m.id %}selected{% endif %}>
+                                    {{ m.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small opacity-75">Who they report to.</div>
+                        </div>
+
+                        <!-- Team Commission Rate -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Team Override Rate (%)</label>
+                            <div class="input-group">
+                                <input type="number" name="team_commission_rate" step="0.01" class="form-control"
+                                    value="{{ sales_profile.team_commission_rate }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text small opacity-75">What they earn from subordinates.</div>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">
+                            <i class="bi bi-save me-1"></i> Save Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% elif request.user.sales_profile.subordinates.exists %}
+            <!-- Manager View: Read Only -->
+            <div class="card premium-card mt-4">
+                <div class="card-header bg-slate-50 dark:bg-slate-900/50 border-0 p-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-gear-fill text-primary"></i>
+                    <h5 class="section-header-premium mb-0">Agent Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Agent Commission Rate -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                        <div>
+                            <div class="small fw-bold text-brand-text opacity-75 uppercase tracking-wider mb-1">
+                                <i class="bi bi-percent me-1 text-primary"></i>Agent Commission Rate
+                            </div>
+                            <div class="text-muted small">Agent earns this % on their own deals.</div>
+                        </div>
+                        <span class="badge bg-primary fs-5 px-3 py-2">{{ sales_profile.commission_rate }}%</span>
+                    </div>
+                    <!-- Team Lead's Override Rate from this agent -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                        <div>
+                            <div class="small fw-bold text-brand-text opacity-75 uppercase tracking-wider mb-1">
+                                <i class="bi bi-award me-1 text-success"></i>Your Override Rate
+                            </div>
+                            <div class="text-muted small">You earn this % on this agent's deals.</div>
+                        </div>
+                        <span class="badge bg-success fs-5 px-3 py-2">
+                            {% if request.user.sales_profile %}{{ request.user.sales_profile.team_commission_rate }}%{% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <!-- Reports To -->
+                    {% if sales_profile.manager %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="small fw-bold text-brand-text opacity-75 uppercase tracking-wider">
+                            <i class="bi bi-person-badge me-1 text-primary"></i>Reports To
+                        </div>
+                        <span class="text-brand-text fw-bold">{{ sales_profile.manager.user.username }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- History Log -->
+            <div class="card premium-card mt-4">
+                <div
+                    class="card-header bg-slate-100 dark:bg-slate-800/50 border-0 p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold small uppercase tracking-wider opacity-75 text-brand-text"><i
+                            class="bi bi-clock-history me-2"></i>History Log</h5>
+                    <a href="{% url 'agent_history_full' agent.id %}" class="btn btn-sm btn-link text-decoration-none">
+                        View All <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        {% for log in history_logs %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 fw-bold text-primary small">{{ log.get_action_type_display }}</h6>
+                                <small class="text-muted"
+                                    style="font-size: 0.7rem;">{{ log.created_at|date:"M d, H:i" }}</small>
+                            </div>
+                            <p class="mb-1 small">{{ log.details }}</p>
+                            <small class="text-muted" style="font-size: 0.7rem;">
+                                <i class="bi bi-person me-1"></i>By: {{ log.action_by.username|default:"System" }}
+                            </small>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox d-block mb-2"></i>
+                            No activity logged yet.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned Leads Management -->
+    <div class="card premium-card mb-5">
+        <div class="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
+            <h5 class="section-header-premium mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Assigned Leads <span
+                    class="fw-black ms-2" style="color: var(--brand-primary); font-size: 1.2rem;"
+                    id="displayedCount">{{ total_leads }}</span></h5>
+            <div>
+                <select class="form-select form-select-sm me-2" id="statusFilter"
+                    style="width: auto; display: inline-block;">
+                    <option value="all">All Status</option>
+                    <option value="NOT_CONTACTED">Not Contacted</option>
+                    <option value="SENT,DELIVERED,READ">In Progress</option>
+                    <option value="REPLIED">Replied</option>
+                    <option value="DEAL">Deals</option>
+                    <option value="NOT_INTERESTED">Not Interested</option>
+                </select>
+                {% if request.user.is_staff or agent.sales_profile.manager.user == request.user %}
+                <button class="btn btn-sm btn-outline-primary me-2" onclick="selectAllLeads()">
+                    <i class="bi bi-check-square"></i> Select All
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="showTransferModal()" id="transferBtn" disabled>
+                    <i class="bi bi-arrow-right-circle"></i> Transfer Selected
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="showRemoveModal()" id="removeBtn" disabled>
+                    <i class="bi bi-x-circle"></i> Remove Selected
+                </button>
+                {% endif %}
+
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-slate-50 dark:bg-slate-900/50">
+                        <tr>
+                            <th class="px-3 py-3 border-0" width="40"><input type="checkbox" id="selectAllCheckbox"
+                                    onchange="toggleAllLeads()"></th>
+                            <th
+                                class="px-3 py-3 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Lead</th>
+                            <th
+                                class="px-3 py-3 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                City</th>
+                            <th
+                                class="px-3 py-3 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Status</th>
+                            <th
+                                class="px-3 py-3 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Last Contact</th>
+                            <th
+                                class="px-3 py-3 border-0 text-brand-text opacity-75 small fw-bold uppercase tracking-wider">
+                                Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in assigned_leads %}
+                        <tr data-status="{{ lead.outreach_status.status }}">
+                            <td><input type="checkbox" class="lead-checkbox" value="{{ lead.id }}"
+                                    onchange="updateButtons()"></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-shop me-3 text-primary fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold text-brand-text">{{ lead.name }}</div>
+                                        {% if lead.contact_details.phone_whatsapp %}
+                                        <small class="text-muted"><i class="bi bi-whatsapp"></i>
+                                            {{ lead.contact_details.phone_whatsapp }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ lead.city }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if lead.outreach_status.status == 'DEAL' %}bg-success
+                                    {% elif lead.outreach_status.status == 'REPLIED' or lead.outreach_status.status == 'INTERESTED' %}bg-info
+                                    {% elif lead.outreach_status.status == 'SENT' or lead.outreach_status.status == 'DELIVERED' or lead.outreach_status.status == 'READ' %}bg-primary
+                                    {% elif lead.outreach_status.status == 'NOT_INTERESTED' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ lead.outreach_status.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if lead.outreach_status.last_contact_date %}
+                                {{ lead.outreach_status.last_contact_date|timesince }} ago
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'lead_detail' lead.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No leads assigned yet
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transfer Leads</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Transfer <strong id="transferCount">0</strong> selected lead(s) to:</p>
+                <select class="form-select" id="targetAgentSelect">
+                    <option value="">Select sales agent...</option>
+                    {% if request.user.is_staff %}
+                    {% for other_agent in other_agents %}
+                    <option value="{{ other_agent.id }}">{{ other_agent.username }} ({{ other_agent.email }})</option>
+                    {% endfor %}
+                    {% else %}
+                    {# Team Lead: scope to themselves + their subordinates (excluding the viewed agent) #}
+                    {% if request.user != agent %}
+                    <option value="{{ request.user.id }}">{{ request.user.username }} (You)</option>
+                    {% endif %}
+                    {% for other_agent in other_agents %}
+                    <option value="{{ other_agent.id }}">{{ other_agent.username }}</option>
+                    {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="confirmTransfer()">Transfer Leads</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Modal -->
+<div class="modal fade" id="removeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Lead Assignment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove assignment from <strong id="removeCount">0</strong> selected lead(s)?
+                </p>
+                <p class="text-muted small">This will unassign the leads. They can be reassigned later.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmRemove()">Remove Assignment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const agentId = {{ agent.id }};
+    let transferModal, removeModal;
+    let performanceChart;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize modals
+        transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+        removeModal = new bootstrap.Modal(document.getElementById('removeModal'));
+
+        // Load performance data and render chart
+        loadPerformanceData();
+
+        // Status filter functionality
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterLeads);
+        }
+    });
+
+    function filterLeads() {
+        const filterValue = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('tbody tr[data-status]');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            if (filterValue === 'all') {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                const filterStatuses = filterValue.split(',');
+                if (filterStatuses.includes(status)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+
+        // Update displayed count
+        document.getElementById('displayedCount').textContent = visibleCount;
+
+        // Update button states after filtering
+        updateButtons();
+    }
+
+    function loadPerformanceData() {
+        fetch(`/agent/${agentId}/stats/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderPerformanceChart(data.data.daily_stats);
+                }
+            })
+            .catch(error => console.error('Error loading performance data:', error));
+    }
+
+    function renderPerformanceChart(dailyStats) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+
+        const labels = dailyStats.map(stat => new Date(stat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const dealsData = dailyStats.map(stat => stat.deals);
+        const messagesData = dailyStats.map(stat => stat.messages);
+
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Deals Closed',
+                        data: dealsData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Messages Sent',
+                        data: messagesData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function toggleAllLeads() {
+        const selectAll = document.getElementById('selectAllCheckbox');
+        const checkboxes = document.querySelectorAll('.lead-checkbox');
+
+        // Only toggle visible checkboxes
+        checkboxes.forEach(cb => {
+            const row = cb.closest('tr');
+            if (row && row.style.display !== 'none') {
+                cb.checked = selectAll.checked;
+            } else if (!selectAll.checked) {
+                // If unselecting all, unselect all including hidden
+                cb.checked = false;
+            }
+        });
+        updateButtons();
+    }
+
+    function selectAllLeads() {
+        const selectAll = document.getElementById('selectAllCheckbox');
+        selectAll.checked = !selectAll.checked;
+        toggleAllLeads();
+    }
+
+    function updateButtons() {
+        const checkedBoxes = document.querySelectorAll('.lead-checkbox:checked');
+        const transferBtn = document.getElementById('transferBtn');
+        const removeBtn = document.getElementById('removeBtn');
+        const selectAll = document.getElementById('selectAllCheckbox');
+
+        const totalVisible = Array.from(document.querySelectorAll('tbody tr[data-status]')).filter(r => r.style.display !== 'none').length;
+        const visibleChecked = Array.from(checkedBoxes).filter(cb => cb.closest('tr').style.display !== 'none').length;
+
+        if (selectAll) {
+            selectAll.checked = totalVisible > 0 && visibleChecked === totalVisible;
+            selectAll.indeterminate = visibleChecked > 0 && visibleChecked < totalVisible;
+        }
+
+        if (checkedBoxes.length > 0) {
+            transferBtn.disabled = false;
+            transferBtn.classList.remove('btn-outline-secondary');
+            transferBtn.classList.add('btn-warning');
+
+            removeBtn.disabled = false;
+            removeBtn.classList.remove('btn-outline-secondary');
+            removeBtn.classList.add('btn-danger');
+        } else {
+            transferBtn.disabled = true;
+            transferBtn.classList.add('btn-outline-secondary');
+
+            removeBtn.disabled = true;
+            removeBtn.classList.add('btn-outline-secondary');
+        }
+    }
+
+    function showTransferModal() {
+        const checkedBoxes = document.querySelectorAll('.lead-checkbox:checked');
+        document.getElementById('transferCount').textContent = checkedBoxes.length;
+        transferModal.show();
+    }
+
+    function showRemoveModal() {
+        const checkedBoxes = document.querySelectorAll('.lead-checkbox:checked');
+        document.getElementById('removeCount').textContent = checkedBoxes.length;
+        removeModal.show();
+    }
+
+    function confirmTransfer() {
+        const targetAgentId = document.getElementById('targetAgentSelect').value;
+        if (!targetAgentId) {
+            alert('Please select a target agent');
+            return;
+        }
+
+        const checkedBoxes = document.querySelectorAll('.lead-checkbox:checked');
+        const leadIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+        fetch(`/team/${agentId}/transfer-leads/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lead_ids: leadIds,
+                target_agent_id: parseInt(targetAgentId)
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    transferModal.hide();
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to transfer leads');
+            });
+    }
+
+    function confirmRemove() {
+        const checkedBoxes = document.querySelectorAll('.lead-checkbox:checked');
+        const leadIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+        fetch(`/team/${agentId}/remove-leads/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lead_ids: leadIds
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    removeModal.hide();
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to remove leads');
+            });
+    }
+</script>
+{% endblock %}

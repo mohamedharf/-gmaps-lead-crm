@@ -1,0 +1,565 @@
+{% extends 'sales/base.html' %}
+{% load static %}
+
+{% block title %}Scraper Control Center{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 px-md-2">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 header-section">
+        <div>
+            <h2 class="mb-1 fw-bold text-dark dark:text-white d-flex align-items-center gap-2">
+                <i class="bi bi-cloud-download text-primary"></i> Scraper Control Center
+            </h2>
+            <p class="text-muted mb-0 dark:text-slate-400">Extract high-quality leads automatically from Google Maps</p>
+        </div>
+    </div>
+
+    <!-- Prominent Dashboard Cards (New) -->
+    <div class="row g-3 mb-4 sc-dashboard">
+        <div class="col-md-3">
+            <div
+                class="card border-0 shadow-sm rounded-4 h-100 bg-white dark:bg-slate-800 border-start border-primary border-4">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">System Status</p>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="status-spinner" class="spinner-grow spinner-grow-sm text-primary"
+                            style="display: none;"></span>
+                        <h5 class="mb-0 fw-black text-dark dark:text-white" id="status-text">Idle</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div
+                class="card border-0 shadow-sm rounded-4 h-100 bg-white dark:bg-slate-800 border-start border-success border-4">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Saved (Session)</p>
+                    <h5 class="mb-0 fw-black text-success" id="dash-saved">0</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div
+                class="card border-0 shadow-sm rounded-4 h-100 bg-white dark:bg-slate-800 border-start border-info border-4">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Target Limit</p>
+                    <h5 class="mb-0 fw-black text-info" id="dash-target">0</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div
+                class="card border-0 shadow-sm rounded-4 h-100 bg-white dark:bg-slate-800 border-start border-warning border-4">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Remaining</p>
+                    <h5 class="mb-0 fw-black text-warning" id="dash-remaining">0</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Scraper Form Column -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100 bg-white dark:bg-slate-800">
+                <div class="card-header border-0 py-3 px-4"
+                    style="background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);">
+                    <h5 class="mb-0 text-white fw-bold d-flex align-items-center">
+                        <i class="bi bi-search me-2"></i> Start New Search
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form hx-post="{% url 'run_scraper' %}" hx-target="#console-output" hx-swap="beforeend">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-2">Target Data
+                                Group</label>
+
+                            <div class="mb-3">
+                                <label for="dataset_id" class="form-label text-sm text-dark dark:text-slate-300">Save To
+                                    Existing Dataset</label>
+                                <select class="form-select bg-light dark:bg-slate-900 border-0 shadow-none py-2"
+                                    id="dataset_id" name="dataset_id">
+                                    <option value="">-- Create New Dataset Below --</option>
+                                    {% for ds in datasets %}
+                                    <option value="{{ ds.id }}">{{ ds.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="new_dataset_name"
+                                    class="form-label text-sm text-dark dark:text-slate-300">Or Create New
+                                    Dataset</label>
+                                <input type="text"
+                                    class="form-control bg-light dark:bg-slate-900 border-0 shadow-none py-2"
+                                    id="new_dataset_name" name="new_dataset_name"
+                                    placeholder="e.g., Cairo Cafes March 2026">
+                            </div>
+                        </div>
+
+                        <hr class="my-4 border-slate-200 dark:border-slate-700">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-2">Search
+                                Parameters</label>
+
+                            <div class="mb-3">
+                                <label for="keyword" class="form-label text-sm text-dark dark:text-slate-300">Keyword /
+                                    Activity *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light dark:bg-slate-900 border-0 text-muted"><i
+                                            class="bi bi-tag"></i></span>
+                                    <input type="text"
+                                        class="form-control bg-light dark:bg-slate-900 border-0 shadow-none py-2"
+                                        id="keyword" name="keyword" placeholder="e.g., Pizza, Real Estate" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="city" class="form-label text-sm text-dark dark:text-slate-300">Target City
+                                    *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light dark:bg-slate-900 border-0 text-muted"><i
+                                            class="bi bi-geo-alt"></i></span>
+                                    <input type="text"
+                                        class="form-control bg-light dark:bg-slate-900 border-0 shadow-none py-2"
+                                        id="city" name="city" placeholder="e.g., Cairo, Alexandria" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="limit" class="form-label text-sm text-dark dark:text-slate-300">Result
+                                    Limit</label>
+                                <div class="input-group mb-1">
+                                    <span class="input-group-text bg-light dark:bg-slate-900 border-0 text-muted"><i
+                                            class="bi bi-123"></i></span>
+                                    <input type="number"
+                                        class="form-control bg-light dark:bg-slate-900 border-0 shadow-none py-2"
+                                        id="limit" name="limit" value="100" min="0" placeholder="100">
+                                </div>
+                                <div class="form-text text-muted small"><i class="bi bi-info-circle me-1"></i>Set to 0
+                                    for Infinite Scroll</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4 pt-2">
+                            <button type="submit" id="startBtn"
+                                class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-bold py-2 d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-play-fill fs-5"></i> Start Extraction
+                            </button>
+                            <button type="button" id="stopBtnContainer"
+                                class="btn btn-danger rounded-pill fw-bold px-4 py-2 shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                hx-post="{% url 'stop_scraper' %}" hx-target="#console-output" hx-swap="beforeend"
+                                hx-on::after-request="this.style.display='none'" style="display: none;">
+                                <i class="bi bi-stop-circle-fill"></i> Stop
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Data Enrichment Card (Email Hunter) -->
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden mt-4 bg-white dark:bg-slate-800">
+                <div class="card-header border-0 py-3 px-4 bg-info bg-gradient">
+                    <h5 class="mb-0 text-white fw-bold d-flex align-items-center">
+                        <i class="bi bi-lightning-charge-fill me-2"></i> Email Hunter
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small mb-3">
+                        Find missing emails automatically for leads with websites.
+                    </p>
+
+                    <form id="enrichmentForm" hx-target="#console-output" hx-swap="beforeend">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Select Dataset (Optional)</label>
+                            <select name="dataset_id" class="form-select form-select-sm rounded-3">
+                                <option value="">All Datasets</option>
+                                {% for ds in datasets %}
+                                <option value="{{ ds.id }}">{{ ds.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Enrichment Progress (Premium Style) -->
+                        <div id="enrichment-progress-container" class="mb-4" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-xs fw-bold text-info d-flex align-items-center gap-1">
+                                    <span class="spinner-grow spinner-grow-sm" role="status"></span>
+                                    Enriching Data...
+                                </span>
+                                <span id="enrichment-progress-percent"
+                                    class="badge bg-info-soft text-info rounded-pill px-2">0%</span>
+                            </div>
+                            <div class="progress shadow-sm bg-light dark:bg-slate-900"
+                                style="height: 10px; border-radius: 20px;">
+                                <div id="enrichment-progress-bar"
+                                    class="progress-bar bg-info bg-gradient progress-bar-striped progress-bar-animated"
+                                    role="progressbar" style="width: 0%; border-radius: 20px;"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <span class="text-muted" style="font-size: 0.65rem;">Processing leads...</span>
+                                <span class="text-muted" style="font-size: 0.65rem;"
+                                    id="enrichment-count-text">0/0</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" id="enrichmentStartBtn"
+                                class="btn btn-info flex-grow-1 shadow-sm rounded-pill fw-bold py-2 text-white d-flex align-items-center justify-content-center gap-2"
+                                hx-post="{% url 'enrichment_start' %}" hx-include="#enrichmentForm">
+                                <i class="bi bi-search"></i> Start Enrichment
+                            </button>
+
+                            <button type="button" id="enrichmentStopBtn"
+                                class="btn btn-outline-danger shadow-sm rounded-pill fw-bold px-3 py-2 d-flex align-items-center justify-content-center"
+                                style="display: none;" hx-post="{% url 'stop_enrichment' %}" hx-target="#console-output"
+                                hx-swap="beforeend">
+                                <i class="bi bi-stop-fill fs-5"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Output Column -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100 bg-dark"
+                style="background-color: #0f172a !important;">
+                <div class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center"
+                    style="background-color: #1e293b !important; border-bottom: 1px solid #334155 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex gap-1">
+                            <span class="terminal-dot dot-red"></span>
+                            <span class="terminal-dot dot-yellow"></span>
+                            <span class="terminal-dot dot-green"></span>
+                        </div>
+                        <h5 class="mb-0 text-white fw-bold d-flex align-items-center gap-2 font-monospace fs-6">
+                            <i class="bi bi-terminal"></i> scraper_engine.log
+                        </h5>
+                        <span id="live-indicator" class="live-indicator">
+                            <i class="bi bi-broadcast me-1"></i> LIVE
+                        </span>
+                    </div>
+                    {% if request.user.is_staff %}
+                    <button type="button"
+                        class="btn btn-sm btn-outline-danger border-0 text-xs fw-bold px-3 py-1 rounded-pill"
+                        id="clearLogsBtn">
+                        <i class="bi bi-trash3 me-1"></i> Clear Console
+                    </button>
+                    {% endif %}
+                </div>
+                <!-- Progress Bar -->
+                <div id="scraper-progress-container" class="scraper-progress-container">
+                    <div id="scraper-progress-bar" class="scraper-progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="card-body p-0 position-relative">
+                    <div class="position-absolute top-0 start-0 w-100 h-100 overflow-auto custom-scrollbar-section p-4"
+                        id="console-output"
+                        style="font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; color: #a5b4fc; scroll-behavior: smooth;">
+                        <p class="mb-1"><span class="text-secondary">[{{ now|date:'H:i:s' }}]</span> > System ready and
+                            awaiting command...</p>
+                        <p class="mb-1"><span class="text-secondary">[{{ now|date:'H:i:s' }}]</span> > Required
+                            dependencies loaded.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styling to make the pseudo-terminal look professional */
+    #console-output p {
+        margin-bottom: 0.25rem;
+        line-height: 1.4;
+    }
+
+    /* System color adherence */
+    .text-brand-primary {
+        color: var(--brand-primary) !important;
+    }
+
+    .text-brand-secondary {
+        color: var(--brand-secondary) !important;
+    }
+
+    /* Dashboard Card Enhancements */
+    .sc-dashboard .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sc-dashboard .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    @keyframes card-pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(var(--brand-primary-rgb, 13, 110, 253), 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(var(--brand-primary-rgb, 13, 110, 253), 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(var(--brand-primary-rgb, 13, 110, 253), 0);
+        }
+    }
+
+    .card-running {
+        animation: card-pulse 2s infinite;
+        border-color: var(--brand-primary) !important;
+    }
+
+    /* Terminal Dot Style */
+    .terminal-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot-red {
+        background-color: #ff5f56;
+    }
+
+    .dot-yellow {
+        background-color: #ffbd2e;
+    }
+
+    .dot-green {
+        background-color: #27c93f;
+    }
+
+    /* Pulsing LIVE Indicator */
+    @keyframes pulse-live {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.3;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .live-indicator {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        background: rgba(248, 113, 113, 0.2);
+        color: #f87171;
+        border: 1px solid #f87171;
+        border-radius: 4px;
+        animation: pulse-live 1.5s infinite;
+        display: none;
+    }
+
+    /* Progress Bar */
+    .scraper-progress-container {
+        height: 4px;
+        background: #334155;
+        overflow: hidden;
+        display: none;
+    }
+
+    .scraper-progress-bar {
+        height: 100%;
+        background: var(--brand-primary);
+        transition: width 0.4s ease;
+    }
+
+    .scraper-progress-bar.bg-info {
+        background: #0dcaf0 !important;
+        /* Force info color for enrichment */
+    }
+
+    #console-output .text-success {
+        color: #34d399 !important;
+    }
+
+    #console-output .text-warning {
+        color: #fbbf24 !important;
+    }
+
+    #console-output .text-danger {
+        color: #f87171 !important;
+    }
+
+    #console-output .text-info {
+        color: #60a5fa !important;
+    }
+</style>
+
+<script>
+    let lastLogCount = 0;
+
+    function fetchLogs() {
+        fetch("{% url 'get_scraper_logs' %}")
+            .then(res => res.json())
+            .then(data => {
+                const consoleOutput = document.getElementById('console-output');
+                if (data.logs.length > lastLogCount) {
+                    // Start fresh if cleared or first load
+                    if (lastLogCount === 0) consoleOutput.innerHTML = '';
+
+                    for (let i = lastLogCount; i < data.logs.length; i++) {
+                        const log = data.logs[i];
+                        const logRow = document.createElement('p');
+                        logRow.className = 'mb-1';
+
+                        let message = log.message;
+                        let colorClass = '';
+
+                        // Detect keywords for coloring
+                        if (message.includes('✓') || message.includes('Saved') || message.includes('success')) {
+                            colorClass = 'text-success';
+                        } else if (message.includes('⚠') || message.includes('Duplicate') || message.includes('warn')) {
+                            colorClass = 'text-warning';
+                        } else if (message.includes('✗') || message.includes('Error') || message.includes('Failed')) {
+                            colorClass = 'text-danger';
+                        } else if (message.includes('→') || message.includes('Target') || message.includes('Starting')) {
+                            colorClass = 'text-info';
+                        }
+
+                        const timestamp = `<span class="text-secondary">[${new Date(log.created_at).toLocaleTimeString()}]</span>`;
+                        const content = colorClass ? `<span class="${colorClass}">${message}</span>` : message;
+
+                        logRow.innerHTML = `${timestamp} > ${content}`;
+                        consoleOutput.appendChild(logRow);
+                    }
+                    lastLogCount = data.logs.length;
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }
+            });
+    }
+
+    function updateScraperStatus() {
+        fetch("{% url 'get_scraper_status' %}")
+            .then(res => res.json())
+            .then(data => {
+                const stopBtn = document.getElementById('stopBtnContainer');
+                const startBtn = document.getElementById('startBtn');
+                const statusText = document.getElementById('status-text');
+                const statusSpinner = document.getElementById('status-spinner');
+                const liveIndicator = document.getElementById('live-indicator');
+
+                // Normal Scraper UI
+                const progressContainer = document.getElementById('scraper-progress-container');
+                const progressBar = document.getElementById('scraper-progress-bar');
+
+                // Enrichment UI
+                const enStartBtn = document.getElementById('enrichmentStartBtn');
+                const enStopBtn = document.getElementById('enrichmentStopBtn');
+                const enProgressContainer = document.getElementById('enrichment-progress-container');
+                const enProgressBar = document.getElementById('enrichment-progress-bar');
+                const enProgressPercent = document.getElementById('enrichment-progress-percent');
+
+                const dashCards = document.querySelectorAll('.sc-dashboard .card');
+
+                document.getElementById('dash-saved').innerText = data.saved;
+                document.getElementById('dash-target').innerText = data.total;
+                document.getElementById('dash-remaining').innerText = data.remaining;
+
+                if (data.is_running) {
+                    statusText.innerText = data.is_enrichment ? 'Enriching...' : 'Running...';
+                    statusText.classList.add('text-primary');
+                    statusSpinner.style.display = 'inline-block';
+                    liveIndicator.style.display = 'inline-block';
+
+                    // Card animations
+                    dashCards.forEach(card => card.classList.add('card-running'));
+
+                    if (data.is_enrichment) {
+                        // ENRICHMENT MODE
+                        enStartBtn.disabled = true;
+                        enStartBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Processing...`;
+                        enStopBtn.style.display = 'flex';
+                        enProgressContainer.style.display = 'block';
+
+                        if (data.total > 0) {
+                            const percent = Math.round((data.saved / data.total) * 100);
+                            enProgressBar.style.width = percent + '%';
+                            enProgressPercent.innerText = percent + '%';
+
+                            const countText = document.getElementById('enrichment-count-text');
+                            if (countText) countText.innerText = `${data.saved}/${data.total}`;
+
+                            // ALSO Update main terminal progress bar for consistency
+                            progressContainer.style.display = 'block';
+                            progressBar.style.width = percent + '%';
+                            progressBar.className = 'scraper-progress-bar bg-info'; // Blue for enrichment
+                        }
+
+                        // Disable main scraper
+                        startBtn.disabled = true;
+                    } else {
+                        // NORMAL SCRAPER MODE
+                        stopBtn.style.display = 'flex';
+                        startBtn.disabled = true;
+                        startBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Extracting...`;
+
+                        if (data.total > 0) {
+                            const percent = Math.min((data.saved / data.total) * 100, 100);
+                            progressContainer.style.display = 'block';
+                            progressBar.style.width = percent + '%';
+                            progressBar.className = 'scraper-progress-bar'; // Default (usually brand color)
+                        }
+                    }
+                } else {
+                    statusText.innerText = 'Idle';
+                    statusText.classList.remove('text-primary');
+                    statusSpinner.style.display = 'none';
+                    liveIndicator.style.display = 'none';
+
+                    // Reset Main Scraper UI
+                    stopBtn.style.display = 'none';
+                    progressContainer.style.display = 'none';
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '<i class="bi bi-play-fill fs-5"></i> Start Extraction';
+
+                    // Reset Enrichment UI
+                    enStartBtn.disabled = false;
+                    enStartBtn.innerHTML = '<i class="bi bi-search me-1"></i> Start Enrichment';
+                    enStopBtn.style.display = 'none';
+                    enProgressContainer.style.display = 'none';
+
+                    // Remove card animations
+                    dashCards.forEach(card => card.classList.remove('card-running'));
+                }
+            })
+            .catch(err => console.error("Status check failed", err));
+    }
+
+    // Clear Logs Handler
+    const clearBtn = document.getElementById('clearLogsBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (!confirm('Are you sure you want to clear all persistent logs?')) return;
+            fetch("{% url 'clear_scraper_logs' %}")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('console-output').innerHTML = '';
+                        lastLogCount = 0;
+                    }
+                });
+        });
+    }
+
+    // Start polling when page loads
+    setInterval(updateScraperStatus, 2000);
+    setInterval(fetchLogs, 3000);
+    updateScraperStatus();
+    fetchLogs();
+</script>
+{% endblock %}
